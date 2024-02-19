@@ -26,7 +26,7 @@ typedef struct {
 	uint64_t pc; // program counter (r15) -> current instruction executed
 	uint64_t sp; // stack pointer (sp)
 	uint64_t lr; // return addr  (x30)
-	uint64_t cpsr; // status pointer (r14)
+	uint64_t fp; // frame pointer (x29)
 	uint64_t x0; 
 	uint64_t x1; 
 	uint64_t x2; 
@@ -36,7 +36,6 @@ typedef struct {
 	uint64_t x6; 
 	uint64_t x7; 
 	uint64_t x8; 
-	uint64_t fp; // frame pointer (x29)
 	uint64_t x9;
 	uint64_t x10;
 	uint64_t x11;
@@ -44,7 +43,19 @@ typedef struct {
 	uint64_t x13;
 	uint64_t x14;
 	uint64_t x15;
-
+	uint64_t x16;
+	uint64_t x17;
+	uint64_t x18;
+	uint64_t x19;
+	uint64_t x20;
+	uint64_t x21;
+	uint64_t x22;
+	uint64_t x23;
+	uint64_t x24;
+	uint64_t x25;
+	uint64_t x26;
+	uint64_t x27;
+	uint64_t x28;
 } context;
 
 struct {
@@ -80,9 +91,7 @@ void resumeThread(int index){
 	// TODO - restore registers & sp & jump to pc
     threads_arr[index].status = RUNNING;
     int status = threads_arr[index].entry_point(threads_arr[index].arg);
-
 	// threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
-
 }
 
 // Loops all thread array and returns the index of the next thread we shuold handle, 
@@ -92,7 +101,7 @@ int getNextThreadIndexToHandle(void){
 	{
 		enum STATUS threadStatus = threads_arr[i].status;
 		if(threadStatus != FINISHED && threadStatus != RUNNING){
-                    // printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
+			printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
 			return i;
 		}
 	}
@@ -124,7 +133,7 @@ void thread_dieded(){
 	printf("DIEDED THREAD\n");
 	int nextThread = getNextThreadIndexToHandleIndex(idx);
 	// Context switch should be here
-	if ( nextThread != -1 && nextThread < size ){
+	if ( nextThread != -1 && nextThread < size ){ 
 		printf("Next should handle thread index %d\n", nextThread);
 			uint64_t curr_sp = 0;
 			uint64_t curr_lr = 0;
@@ -133,15 +142,13 @@ void thread_dieded(){
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
 			uint64_t dieded_addr = &thread_dieded;
-			// dieded_addr = dieded_addr & 0xfffffff;
-			// new_sp[0] = &thread_dieded;
-			// new_sp[1] = &thread_dieded;
 			__asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
 			// printf("[be4 init] setting new SP:  %p\n", new_sp);
 			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
 			threads_arr[nextThread].ctx.sp = new_sp;
 			threads_arr[nextThread].ctx.lr = dieded_addr;
 			idx = nextThread; // setting index of running thread
+			threads_arr[nextThread].status = RUNNING;
 			__asm__ volatile ( "BR %0" : : "r" (threads_arr[nextThread].entry_point):); // TODO - solve argument that's printed
 	}
 	else{
@@ -231,40 +238,82 @@ void SCHEDULER__yield(void){
 	__asm__ volatile ("mov %0, x8" : "=r"(newContext.x8) ::); // save regs
 	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::); // save regs
 	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::); // save regs
+	__asm__ volatile ("mov %0, x11" : "=r"(newContext.x11) ::); // save regs
+	__asm__ volatile ("mov %0, x12" : "=r"(newContext.x12) ::); // save regs
+	__asm__ volatile ("mov %0, x13" : "=r"(newContext.x13) ::); // save regs
+	__asm__ volatile ("mov %0, x14" : "=r"(newContext.x14) ::); // save regs
+	__asm__ volatile ("mov %0, x15" : "=r"(newContext.x15) ::); // save regs
+	__asm__ volatile ("mov %0, x16" : "=r"(newContext.x16) ::); // save regs
+	__asm__ volatile ("mov %0, x17" : "=r"(newContext.x17) ::); // save regs
+	__asm__ volatile ("mov %0, x18" : "=r"(newContext.x18) ::); // save regs
+	__asm__ volatile ("mov %0, x19" : "=r"(newContext.x19) ::); // save regs
+	__asm__ volatile ("mov %0, x20" : "=r"(newContext.x20) ::); // save regs
+	__asm__ volatile ("mov %0, x21" : "=r"(newContext.x21) ::); // save regs
+	__asm__ volatile ("mov %0, x22" : "=r"(newContext.x22) ::); // save regs
+	__asm__ volatile ("mov %0, x23" : "=r"(newContext.x23) ::); // save regs
+	__asm__ volatile ("mov %0, x24" : "=r"(newContext.x24) ::); // save regs
+	__asm__ volatile ("mov %0, x25" : "=r"(newContext.x25) ::); // save regs
+	__asm__ volatile ("mov %0, x26" : "=r"(newContext.x26) ::); // save regs
+	__asm__ volatile ("mov %0, x27" : "=r"(newContext.x27) ::); // save regs
+	__asm__ volatile ("mov %0, x28" : "=r"(newContext.x28) ::); // save regs
 	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
 	__asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
 	newContext.pc = lr; // MIND = BLOWN!! by that I will continue to the rest of the function by calling to lr
-	
+	threads_arr[idx].status = STOPPED;
 	threads_arr[idx].ctx = newContext;
 	u_int64_t n;
 	newContext.lr = newContext.lr & 0xfffffff;
-    int threadToStartOrResumeIndex = -1;
+    int threadToStartOrResumeIndex = getNextThreadIndexToHandleIndex(idx);
+	// Check if need to handle more threads
+	if( threadToStartOrResumeIndex != -1 ){
+		if ( threads_arr[threadToStartOrResumeIndex].status == READY){
+			// // Start thread regularly
+			// uint64_t curr_sp = 0;
+			// uint64_t curr_lr = 0;
+			// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+			// __asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
+			// uint64_t* new_sp = 0;
+			// new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
+			// uint64_t dieded_addr = &thread_dieded;
+			// // dieded_addr = dieded_addr & 0xfffffff;
+			// // new_sp[0] = &thread_dieded;
+			// // new_sp[1] = &thread_dieded;
+			// __asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
+			// // printf("[be4 init] setting new SP:  %p\n", new_sp);
+			// __asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
+			// threads_arr[threadToStartOrResumeIndex].ctx.sp = new_sp;
+			// threads_arr[threadToStartOrResumeIndex].ctx.lr = dieded_addr;
+			// idx = threadToStartOrResumeIndex; // setting index of running thread
+			// __asm__ volatile ( "BR %0" : : "r" (threads_arr[threadToStartOrResumeIndex].entry_point):); // TODO - solve argument that's printed
+			// threads_arr[threadToStartOrResumeIndex].status = RUNNING;
+		}
+		// Resume thread
+		else if ( threads_arr[threadToStartOrResumeIndex].status == STOPPED){
+			// TODO - difficult part
+			printf("in yield, now need to handle thread index %d\n", threadToStartOrResumeIndex);
+		// ACTUALLY YIELD LOGIC - SWITCH CONTEXT WITH NEXT ONE
+		}
+		else{
+		printf("Unexpected state of thread in yield\n");
+		}
+	}
+	else{
+		printf("in YIELD - no more threads\n");
+		terminateProgram();
+	}
+	
 	/* Now we need to run the next thread - I couldn't find a way to terminate this func so I'm 
 	calling the next thread
 	*/
-    while((threadToStartOrResumeIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
-        enum STATUS threadStatus = threads_arr[threadToStartOrResumeIndex].status;
-        if( threadStatus == READY  && idx != threadToStartOrResumeIndex){ // so we won't run the thread forever
+    // while((threadToStartOrResumeIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
+        // enum STATUS threadStatus = threads_arr[threadToStartOrResumeIndex].status;
+        // if( threadStatus == READY  && idx != threadToStartOrResumeIndex){ // so we won't run the thread forever
 		// TODO - test if the addon is ok
 			/**
 			 * at this point I should stop the current thread. And also call initThread. Maybe injecting asm ret will do?
 			 * **/
-			printf("[in yield while loop] Jumping to : %d\n", threadToStartOrResumeIndex);
+			// printf("[in kield while loop] Jumping to : %d\n", threadToStartOrResumeIndex);
 	// JUMP to entry point
-		asm volatile ( "BR %0" : : "r" (threads_arr[threadToStartOrResumeIndex].entry_point):);
-			// __asm__ volatile ("ret"); // copy var to sp
-			printf("initializing thread\n");
-
-			threads_arr[threadToStartOrResumeIndex].status = RUNNING;
-			// initThread(threadToStartOrResumeIndex);
-			break;
-		}
-		else if (threadStatus == STOPPED && idx != threadToStartOrResumeIndex){
-			// TODO - understand how to context switch here
-			resumeThread(threadToStartOrResumeIndex);
-		}
-	}
-// TODO - schedule start scheduler
 	return;
 }
 
