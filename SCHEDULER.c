@@ -60,7 +60,6 @@ typedef struct {
 
 struct {
 	THREAD__entry_point_t *entry_point;
-	void *pcb_addr;
 	void *arg;
 	enum STATUS status;
 	context ctx;
@@ -114,8 +113,8 @@ int getNextThreadIndexToHandleIndex(int currIdx){
 	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
 	{
 		enum STATUS threadStatus = threads_arr[i].status;
-		if((threadStatus != FINISHED )&& (threadStatus != RUNNING) && (i != currIdx)){
-			printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
+		if(( threadStatus != FINISHED ) && (threadStatus != RUNNING) && (i != currIdx)){
+			printf("Returning from getNextThreadIndexToHandleIndex, i: %d\n", i);
 			return i;
 		}
 	}
@@ -130,7 +129,7 @@ void terminateProgram(void){
 
 void thread_dieded(){	
 	threads_arr[idx].status = FINISHED;
-	printf("DIEDED THREAD\n");
+	printf("DIEDED THREAD. Setting %d index thread to FINISHED\n", idx);
 	int nextThread = getNextThreadIndexToHandleIndex(idx);
 	// Context switch should be here
 	if ( nextThread != -1 && nextThread < size ){ 
@@ -264,33 +263,35 @@ void SCHEDULER__yield(void){
 	u_int64_t n;
 	newContext.lr = newContext.lr & 0xfffffff;
     int threadToStartOrResumeIndex = getNextThreadIndexToHandleIndex(idx);
+	idx = threadToStartOrResumeIndex; // changing here since we use global variable and can't access threadToStartOrResumeIndex because we change the stack and it's a stack variable!
+	printf("YO in yield! nextThreadToHandleIndex is: %d\n", threadToStartOrResumeIndex);
 	// Check if need to handle more threads
-	if( threadToStartOrResumeIndex != -1 ){
-		if ( threads_arr[threadToStartOrResumeIndex].status == READY){
+	if( idx != -1 ){
+		if ( threads_arr[idx].status == READY){
 			// // Start thread regularly
-			// uint64_t curr_sp = 0;
-			// uint64_t curr_lr = 0;
-			// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-			// __asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
-			// uint64_t* new_sp = 0;
-			// new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
-			// uint64_t dieded_addr = &thread_dieded;
-			// // dieded_addr = dieded_addr & 0xfffffff;
-			// // new_sp[0] = &thread_dieded;
-			// // new_sp[1] = &thread_dieded;
-			// __asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
-			// // printf("[be4 init] setting new SP:  %p\n", new_sp);
-			// __asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
-			// threads_arr[threadToStartOrResumeIndex].ctx.sp = new_sp;
-			// threads_arr[threadToStartOrResumeIndex].ctx.lr = dieded_addr;
-			// idx = threadToStartOrResumeIndex; // setting index of running thread
-			// __asm__ volatile ( "BR %0" : : "r" (threads_arr[threadToStartOrResumeIndex].entry_point):); // TODO - solve argument that's printed
-			// threads_arr[threadToStartOrResumeIndex].status = RUNNING;
+			uint64_t curr_sp = 0;
+			uint64_t curr_lr = 0;
+			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
+			uint64_t* new_sp = 0;
+			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
+			uint64_t dieded_addr = &thread_dieded;
+			// dieded_addr = dieded_addr & 0xfffffff;
+			// new_sp[0] = &thread_dieded;
+			// new_sp[1] = &thread_dieded;
+			__asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
+			// printf("[be4 init] setting new SP:  %p\n", new_sp);
+			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
+			threads_arr[idx].ctx.sp = new_sp;
+			threads_arr[idx].ctx.lr = dieded_addr;
+			// printf("idx in YIELD::: %d", idx);
+			threads_arr[idx].status = RUNNING;
+			__asm__ volatile ( "BR %0" : : "r" (threads_arr[idx].entry_point):); // TODO - solve argument that's printed
 		}
 		// Resume thread
-		else if ( threads_arr[threadToStartOrResumeIndex].status == STOPPED){
+		else if ( threads_arr[idx].status == STOPPED){
 			// TODO - difficult part
-			printf("in yield, now need to handle thread index %d\n", threadToStartOrResumeIndex);
+			printf("in yield, now need to handle thread index %d\n", idx);
 		// ACTUALLY YIELD LOGIC - SWITCH CONTEXT WITH NEXT ONE
 		}
 		else{
@@ -302,18 +303,6 @@ void SCHEDULER__yield(void){
 		terminateProgram();
 	}
 	
-	/* Now we need to run the next thread - I couldn't find a way to terminate this func so I'm 
-	calling the next thread
-	*/
-    // while((threadToStartOrResumeIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
-        // enum STATUS threadStatus = threads_arr[threadToStartOrResumeIndex].status;
-        // if( threadStatus == READY  && idx != threadToStartOrResumeIndex){ // so we won't run the thread forever
-		// TODO - test if the addon is ok
-			/**
-			 * at this point I should stop the current thread. And also call initThread. Maybe injecting asm ret will do?
-			 * **/
-			// printf("[in kield while loop] Jumping to : %d\n", threadToStartOrResumeIndex);
-	// JUMP to entry point
 	return;
 }
 
