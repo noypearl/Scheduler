@@ -113,6 +113,7 @@ void SCHEDULER__schedule_threads(void){
         }
         else if ( threadStatus == READY ){
                 // printf("Ready thread\n");
+			printf("[in schedule threads loop] Jumping to : %d\n", nextThreadToHandleIndex);
 			uint64_t curr_sp = 0;
 			uint64_t curr_lr = 0;
 			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
@@ -123,39 +124,30 @@ void SCHEDULER__schedule_threads(void){
 			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
 			threads_arr[nextThreadToHandleIndex].ctx.sp = new_sp;
 			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
-			initThread(nextThreadToHandleIndex);
-			__asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // copy var to sp
-			__asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
+	// JUMP to entry point
+				__asm__ volatile(
+				"str %0, [sp]\n\t" : 
+				: "r" (threads_arr[nextThreadToHandleIndex+1].entry_point) // Input operand
+			: "memory", "sp" // Clobbered registers
+		);
+			// }
+			// if thread is final - then 
+			// else{
+			// 	printf("No next thread to jump to. Can't push addr for ret\n");
+			// }
+			__asm__ volatile ( "BR %0" : : "r" (threads_arr[nextThreadToHandleIndex].entry_point):); // TODO - solve argument that's printed
+			// __asm__ volatile ("ret"); // copy var to sp
+			threads_arr[nextThreadToHandleIndex].status = RUNNING;
+			// initThread(nextThreadToHandleIndex);
+			// __asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // copy var to sp
+			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
+			threads_arr[nextThreadToHandleIndex].status = FINISHED; // TODO - verify that the status is changed
 			idx = nextThreadToHandleIndex; // setting index of running thread
         }
         else{
                 printf("Weird state arrived at schedule_threads, state: %d,  index: %d\n", threadStatus, nextThreadToHandleIndex);
         }
 
-		// TODO - next need to loop all the threads in memory PCB and if there's a thread that was saved - need to jump back to him. 
-
-	// TODO - schedule start scheduler
-	/*for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)*/
-	/*{*/
-            /*printf("in foor loop %d\n", i);*/
-		/*// if thread finished - continue loop */
-		/*if (threads_arr[i].status == FINISHED)*/
-		/*{*/
-            /*printf("thread at %d is FINISHED, skipping..\n", i);*/
-			/*continue;*/
-		/*}*/
-		/*else{*/
-			/*printf("Waiting for thread %d to be finished, its status is %d meanwhile, entry_point: %x\n", i*/
-				/*, threads_arr[i].status, threads_arr[i].entry_point);*/
-			/*// TODO - continue thread according to status*/
-			/*if (threads_arr[i].status != RUNNING)*/
-			/*{*/
-				/*// RUN thread*/
-				/*int ep = threads_arr[i].entry_point(threads_arr[i].arg);*/
-				/*threads_arr[i].status = FINISHED;*/
-			/*}*/
-		/*}*/
-	/*}*/
         sleep(1);
     }
 
@@ -184,7 +176,7 @@ void SCHEDULER__yield(void){
 	uint64_t *prev_sp; //previous stack pointer to restore
 	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
 	uint64_t *sp = threads_arr[idx].ctx.sp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
-	uint64_t *lr; // 1 line after field()
+	uint64_t *lr = 0; // 1 line after field()
 	uint64_t *local_sp; // 1 line after field()
 	__asm__ volatile ("mov %0, x0" : "=r"(newContext.x0) ::); // save regs
 	__asm__ volatile ("mov %0, x1" : "=r"(newContext.x1) ::); // save regs
@@ -212,15 +204,17 @@ void SCHEDULER__yield(void){
         enum STATUS threadStatus = threads_arr[threadToStartOrResumeIndex].status;
         if( threadStatus == READY  && idx != threadToStartOrResumeIndex){ // so we won't run the thread forever
 		// TODO - test if the addon is ok
-			printf("[in yield while loop] Found thread to start, number: %d\n", threadToStartOrResumeIndex);
 			/**
 			 * at this point I should stop the current thread. And also call initThread. Maybe injecting asm ret will do?
-			 * o**/
-
-			printf("CALLING RET");
+			 * **/
+			printf("[in yield while loop] Jumping to : %d\n", threadToStartOrResumeIndex);
+	// JUMP to entry point
+		asm volatile ( "BR %0" : : "r" (threads_arr[threadToStartOrResumeIndex].entry_point):);
 			// __asm__ volatile ("ret"); // copy var to sp
 			printf("initializing thread\n");
-			initThread(threadToStartOrResumeIndex);
+
+			threads_arr[threadToStartOrResumeIndex].status = RUNNING;
+			// initThread(threadToStartOrResumeIndex);
 			break;
 		}
 		else if (threadStatus == STOPPED && idx != threadToStartOrResumeIndex){

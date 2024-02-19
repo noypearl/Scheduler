@@ -11,7 +11,7 @@ int thread_1(void *arg)
 	int number6 = 6;
 	int number7 = 7;
 	int number8 = 8;
-	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	// SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
 	int number9 = 9;
 	int number10 = 10;
 	int number11 = 11;
