@@ -66,7 +66,7 @@ int main(void)
  }
  	SCHEDULER__print_threads();
  	SCHEDULER__schedule_threads();
-	SCHEDULER__test();
+	// SCHEDULER__test();
 	// }
 
 	// SCHEDULER__schedule_threads();

@@ -15,7 +15,7 @@ struct {
 	THREAD__entry_point_t *entry_point;
 	void *arg;
 	enum STATUS status;
-} threads_arr[2];
+} threads_arr[3];
 
 int size = 0;
 
@@ -36,7 +36,7 @@ void SCHEDULER__init(void){
 void SCHEDULER__yield(void){
     int nextThreadIndex = -1;
 // TODO - schedule start scheduler
-	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0])-1; i++)
+	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
 	{	
             if(threads_arr[i].status == RUNNING){
                 threads_arr[i].status = STOPPED;
@@ -95,7 +95,7 @@ void SCHEDULER__print_threads(void){
 void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 						    void *arg){
 	
-	printf("adding thread, size: %d, entry_point: %x, arg: %x\n",size, entry_point, arg);
+	// printf("adding thread, size: %d, entry_point: %x, arg: %x\n",size, entry_point, arg);
 	threads_arr[size].entry_point = entry_point;
 	threads_arr[size].arg = arg;
 	threads_arr[size].status = WAITING;
