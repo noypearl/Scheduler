@@ -5,15 +5,15 @@
 int thread_1(void *arg)
 {
 	printf("[T1 START] Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
-	int number3= 3;
+	int number3 = 3;
 	int number4 = 4;
 	int number5 = 5;
 	int number6 = 6;
 	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	// printf("[T1] number (3) : %d\n", number3);
+	printf("[T1] number (4) : %d\n", number4);
+	// printf("[T1] number (5) : %d\n", number5);
 	printf("[T1 END] Hello from thread 1 again!\r\n");
-	printf("number (3) : %d\n", number3);
-	printf("number (4) : %d\n", number4);
-	printf("number (5) : %d\n", number5);
 	return 0;
 }
 
@@ -42,13 +42,13 @@ int thread_3(void *arg)
 
 	return 0;
 }
-				
 
 int thread_1_arg = 0;
 int thread_2_arg = 1;
 int thread_3_arg = 1337;
 
-struct {
+struct
+{
 	THREAD__entry_point_t *entry_point;
 	void *arg;
 } threads[] = {
@@ -61,10 +61,11 @@ int main(void)
 {
 	SCHEDULER__init();
 	/* Add all threads to the scheduler. */
-	for (int i = 0; i < sizeof(threads)/sizeof(threads[0]); i++) {
-		SCHEDULER__add_thread(threads[i].entry_point,threads[i].arg);
- }
- 	SCHEDULER__schedule_threads();
+	for (int i = 0; i < sizeof(threads) / sizeof(threads[0]); i++)
+	{
+		SCHEDULER__add_thread(threads[i].entry_point, threads[i].arg);
+	}
+	SCHEDULER__schedule_threads();
 
 	return 0;
 }
