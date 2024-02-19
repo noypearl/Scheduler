@@ -88,7 +88,7 @@ int getNextThreadIndexToHandle(void){
 	{
 		enum STATUS threadStatus = threads_arr[i].status;
 		if(threadStatus != FINISHED && threadStatus != RUNNING){
-			printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
+			// printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
 			return i;
 		}
 	}
@@ -124,7 +124,6 @@ void thread_dieded(){
 	// Context switch should be here
 	if ( idx != -1 && idx < size ){ 
 		if(threads_arr[idx].status == READY){
-		printf("Next should handle thread index %d\n", idx);
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
 			uint64_t dieded_addr = &thread_dieded;
@@ -151,18 +150,52 @@ void thread_dieded(){
 		"mov x7, %7\n\t"
 		"mov x8, %8\n\t"
 		"mov x9, %9\n\t"
-		"mov x10, %10\n\t"
-		"mov x11, %11\n\t"
-		"mov x12, %12\n\t"
 		:
 		: "r" (threads_arr[idx].ctx.x0), "r" (threads_arr[idx].ctx.x1),
 		"r" (threads_arr[idx].ctx.x2), "r" (threads_arr[idx].ctx.x3),
 		"r" (threads_arr[idx].ctx.x4), "r" (threads_arr[idx].ctx.x5),
 		"r" (threads_arr[idx].ctx.x6), "r" (threads_arr[idx].ctx.x7),
-		"r" (threads_arr[idx].ctx.x8), "r" (threads_arr[idx].ctx.x9),
-		"r" (threads_arr[idx].ctx.x10), "r" (threads_arr[idx].ctx.x11),
-		"r" (threads_arr[idx].ctx.x12)
-		: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12"
+		"r" (threads_arr[idx].ctx.x8), "r" (threads_arr[idx].ctx.x9)
+				: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+		);
+
+		__asm__ volatile (
+		"mov x10, %0\n\t"
+		"mov x11, %1\n\t"
+		"mov x12, %2\n\t"
+		"mov x13, %3\n\t"
+		"mov x14, %4\n\t"
+		"mov x15, %5\n\t"
+		"mov x16, %6\n\t"
+		"mov x17, %7\n\t"
+		"mov x18, %8\n\t"
+		"mov x19, %9\n\t"
+		:
+		: "r" (threads_arr[idx].ctx.x10), "r" (threads_arr[idx].ctx.x11),
+		"r" (threads_arr[idx].ctx.x12), "r" (threads_arr[idx].ctx.x13),
+		"r" (threads_arr[idx].ctx.x14), "r" (threads_arr[idx].ctx.x15),
+		"r" (threads_arr[idx].ctx.x16), "r" (threads_arr[idx].ctx.x17),
+		"r" (threads_arr[idx].ctx.x18), "r" (threads_arr[idx].ctx.x19)
+				: "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19"
+		);
+
+		__asm__ volatile (
+		"mov x20, %0\n\t"
+		"mov x21, %1\n\t"
+		"mov x22, %2\n\t"
+		"mov x23, %3\n\t"
+		"mov x24, %4\n\t"
+		"mov x25, %5\n\t"
+		"mov x26, %6\n\t"
+		"mov x27, %7\n\t"
+		"mov x28, %8\n\t"
+		:
+		: "r" (threads_arr[idx].ctx.x20), "r" (threads_arr[idx].ctx.x21),
+		"r" (threads_arr[idx].ctx.x22), "r" (threads_arr[idx].ctx.x23),
+		"r" (threads_arr[idx].ctx.x24), "r" (threads_arr[idx].ctx.x25),
+		"r" (threads_arr[idx].ctx.x26), "r" (threads_arr[idx].ctx.x27),
+		"r" (threads_arr[idx].ctx.x28)
+				: "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
 		);
 		// TODO - fix registers issue - registers aren't updated!
 		// __asm__ volatile (
@@ -283,22 +316,8 @@ void SCHEDULER__print_threads(void){
  * different thread. 
  * ARM: We need to save the context and set LR   */
 void SCHEDULER__yield(void){
-	printf("in YIELD at 1st line!\n");
+	// printf("in YIELD at 1st line!\n");
 	context newContext = {};
-	uint64_t returnAddr; // 1 line before yield()
-	uint64_t *prev_sp; //previous stack pointer to restore
-	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
-	uint64_t *local_sp; // 1 line after field()
-	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.testlr) ::); 
-	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
-	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
-	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
-
-	newContext.lr = *(newContext.fp+1);
-	// printf("NOI FP: %llx\n", newContext.testlr);
-	// printf("NOI2 FP: %x\n", *(newContext.fp+1));
-	newContext.pc = newContext.lr; // MIND = BLOWN!! by that I will continue to the rest of the function by calling to lr
-
 	__asm__ volatile (
     "mov %0, x0\n\t"
     "mov %1, x1\n\t"
@@ -346,6 +365,20 @@ void SCHEDULER__yield(void){
       "=r"(newContext.x28)
     :: // No clobbered registers specified here, as we're only reading from them
 );
+	uint64_t returnAddr; // 1 line before yield()
+	uint64_t *prev_sp; //previous stack pointer to restore
+	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
+	uint64_t *local_sp; // 1 line after field()
+	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.testlr) ::); 
+	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
+	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
+	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
+
+	newContext.lr = *(newContext.fp+1);
+	// printf("NOI FP: %llx\n", newContext.testlr);
+	// printf("NOI2 FP: %x\n", *(newContext.fp+1));
+	newContext.pc = newContext.lr; // MIND = BLOWN!! by that I will continue to the rest of the function by calling to lr
+
 
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // we shouldn't change lr since it should return to dieded func
 	threads_arr[idx].status = STOPPED;

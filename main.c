@@ -8,8 +8,8 @@ int thread_1(void *arg)
 	int number3= 3;
 	int number4 = 4;
 	int number5 = 5;
-	// int number6 = 6;
-	// int number7 = 7;
+	int number6 = 6;
+	int number7 = 7;
 	// int number8 = 8;
 	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
 	// int number9 = 9;
@@ -21,8 +21,8 @@ int thread_1(void *arg)
 	printf("number (3) : %d\n", number3);
 	printf("number (4) : %d\n", number4);
 	printf("number (5) : %d\n", number5);
-	// printf("number (6) : %d\n", number6);
-	// printf("number (7) : %d\n", number7);
+	printf("number (6) : %d\n", number6);
+	printf("number (7) : %d\n", number7);
 	// printf("number (8) : %d\n", number8);
 	// printf("number (9) : %d\n", number9);
 	// printf("number (10) : %d\n", number10);
@@ -37,9 +37,12 @@ int thread_1(void *arg)
 int thread_2(void *arg)
 {
 	printf("[T2 START] Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
-	// uint64_t curr_sp = 0;
-	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-	// printf("T2: curr_sp : %p\n", curr_sp);
+	int number6 = 6;
+	int number7 = 7;
+	int number8 = 8;
+	printf("number (6) : %d\n", number6);
+	printf("number (7) : %d\n", number7);
+	printf("number (8) : %d\n", number8);
 	// SCHEDULER__yield();
 	// thread_1(NULL);
 	printf("[T2 END] Hello from thread 2 again!\r\n");
@@ -54,17 +57,12 @@ int thread_3(void *arg)
 	// printf("T3: curr_sp : %p\n", curr_sp);
 	printf("[T3 START] Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
 
-	// int Xnumber3= 3;
-	// int Xnumber4 = 4;
-	// SCHEDULER__yield();
 
-	// int Xnumber5 = 5;
-	// int Xnumber6 = 6;
+	int number8 = 8;
+	int number9 = 9;
 
-	// printf("[T3] number (3) : %d\n", Xnumber3);
-	// printf("[T3] number (4) : %d\n", Xnumber4);
-	// printf("[T3] number (5) : %d\n", Xnumber5);
-	// printf("[T3] number (6) : %d\n", Xnumber6);
+	printf("[T3] number (8) : %d\n", number8);
+	printf("[T3] number (9) : %d\n", number9);
 	printf("[T3 END] Hello from thread 3 again!\r\n");
 
 	return 0;
