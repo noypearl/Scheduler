@@ -6,7 +6,7 @@ int thread_1(void *arg)
 {
 	printf("Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
 
-	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	/*SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one*/
 
 	printf("Hello from thread 1 again!\r\n");
 
