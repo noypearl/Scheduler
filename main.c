@@ -9,12 +9,13 @@ int thread_1(void *arg)
 	int number2 = 4;
 	int number3 = 5;
 	int number4 = 6;
-
-	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	// SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
         // for (int i = 0; i < 10; i++) {
 	printf("Hello from thread 1 again!\r\n");
-	printf("number: %d\n", number);
-	printf("number2: %d\n", number2);
+	printf("number (3) : %d\n", number);
+	printf("number (3) addr : %p\n", &number);
+	printf("number2 (4) : %d\n", number2);
+	printf("number2 (4) addr : %p\n", &number2);
 
 	return 0;
 }
@@ -67,11 +68,11 @@ int main(void)
 	SCHEDULER__init();
 	// thread_2(&thread_1_arg);
 	/* Add all threads to the scheduler. */
-	 for (int i = 0; i < sizeof(threads)/sizeof(threads[0]); i++) {
+	for (int i = 0; i < sizeof(threads)/sizeof(threads[0]); i++) {
  	// printf("[main] Adding threads at %d, entry_point: %p, arg: 0x%08x, \n", i, threads[i].entry_point, threads[i].arg);
  	SCHEDULER__add_thread(threads[i].entry_point,threads[i].arg);
  }
- 	SCHEDULER__print_threads();
+ 	// SCHEDULER__print_threads();
  	SCHEDULER__schedule_threads();
 
 	return 0;
