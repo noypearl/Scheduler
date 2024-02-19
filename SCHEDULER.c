@@ -146,7 +146,6 @@ void thread_dieded()
 			new_sp = mmap(NULL, 1024, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 			uint64_t dieded_addr = &thread_dieded;
 			__asm__ volatile("mov lr, %0" : : "r"(dieded_addr) : "lr"); // copy var to sp
-			// printf("[be4 init] setting new SP:  %p\n", new_sp);
 			__asm__ volatile("mov sp, %0" : : "r"(new_sp) : "sp"); // copy var to sp
 			threads_arr[idx].ctx.sp = new_sp;
 			threads_arr[idx].ctx.lr = dieded_addr;
@@ -156,8 +155,7 @@ void thread_dieded()
 		else if (threads_arr[idx].status == STOPPED)
 		{																			// need to CONTEXT SWITCH!
 			__asm__ volatile("mov lr, %0" : : "r"(threads_arr[idx].ctx.lr) : "lr"); // copy var to lr
-			printf("NEED TO CONTEXT SWITCH and continue thread %d yo, val: %d\n", idx, threads_arr[idx].ctx.sp);
-			// printf("PC VAL: %x", threads_arr[idx].ctx.pc);
+			// printf("NEED TO CONTEXT SWITCH and continue thread %d yo, val: %d\n", idx, threads_arr[idx].ctx.sp);
 			__asm__ volatile(
 				"mov x0, %0\n\t"
 				"mov x1, %1\n\t"
@@ -235,7 +233,7 @@ void thread_dieded()
 	// should run the next thread - do the context switch
 	// check if no threads to run - then exit(0)
 }
-// DO
+
 /* Start the scheduler. This function will return only when all
  * threads finished their work. */
 void SCHEDULER__schedule_threads(void)
@@ -359,43 +357,28 @@ void SCHEDULER__yield(void)
 	newContext.fp = *newContext.fp; // to get the right fp from before yield() call
 
 	// newContext.lr = *(newContext.fp + 1);
-	// THE ISSUE IS HERE! Feb 18th. The PC is thread_dieded for some reason! it needs to 
-	// be the address of the rest of the thread!
 	newContext.pc = tmp_pc; // MIND = BLOWN!! by that I will continue to the rest of the function by calling to lr
 	newContext.lr = &thread_dieded; // it's confusing but basically we're returning to dieded after the thread is end. We preserve PC to be 1 instruction after yield() call in the same thread
 
-	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // we shouldn't change lr since it should return to dieded func
-	// if(threads_arr[idx].ctx.pc == 0){
 	threads_arr[idx].status = STOPPED;
 	// }
 	newContext.sp = newContext.fp -4; // preserve sp
-	printf("NEW CONTEXT: fp: %x sp: %x ", newContext.sp, newContext.fp);
+	// printf("NEW CONTEXT: fp: %x sp: %x ", newContext.sp, newContext.fp);
 	threads_arr[idx].ctx = newContext;
 	int threadToStartOrResumeIndex = getNextThreadIndexToHandleIndex(idx);
 	idx = threadToStartOrResumeIndex; // changing here since we use global variable and can't access threadToStartOrResumeIndex because we change the stack and it's a stack variable!
-	printf("YO in yield! nextThreadToHandleIndex is: %d\n", threadToStartOrResumeIndex);
+	// printf("YO in yield! nextThreadToHandleIndex is: %d\n", threadToStartOrResumeIndex);
 	// Check if need to handle more threads
 	if (idx != -1)
 	{
 		if (threads_arr[idx].status == READY)
 		{
-			// // Start thread regularly
-			uint64_t curr_sp = 0;
-			uint64_t curr_lr = 0;
-			__asm__ volatile(
-				"mov %0, sp\n\t"			   // Copy sp to curr_sp
-				"mov %1, lr"				   // Copy lr to curr_lr
-				: "=r"(curr_sp), "=r"(curr_lr) // Output operands
-				:							   // No input operands
-				:							   // No clobbered registers
-			);
-
 			uint64_t *new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 			uint64_t dieded_addr = &thread_dieded;
 			*(new_sp) = dieded_addr;	// avoid stack frame stp / ldp fp,lr issue
 			threads_arr[idx].ctx.sp = new_sp;
-			printf("[yield]NEW SP: %d, IDX: %d, VAL: %d\n", new_sp, idx, threads_arr[idx].ctx.sp);
+			// printf("[yield]NEW SP: %d, IDX: %d, VAL: %d\n", new_sp, idx, threads_arr[idx].ctx.sp);
 			threads_arr[idx].ctx.lr = dieded_addr;
 
 			__asm__ volatile(
@@ -409,11 +392,79 @@ void SCHEDULER__yield(void)
 			threads_arr[idx].status = RUNNING;
 			__asm__ volatile("BR %0" : : "r"(threads_arr[idx].entry_point) :); // TODO - solve argument that's printed
 		}
-		// Resume thread
+		// Resume stopped thread
 		else if (threads_arr[idx].status == STOPPED)
 		{
-			printf("in yield, now need to handle thread index %d. Exiting\n", idx);
-			exit(1);
+			__asm__ volatile("mov lr, %0" : : "r"(threads_arr[idx].ctx.lr) : "lr"); // copy var to lr
+			// printf("NEED TO CONTEXT SWITCH YIELD and continue thread %d yo, val: %d\n", idx, threads_arr[idx].ctx.sp);
+			// printf("PC VAL: %x", threads_arr[idx].ctx.pc);
+			__asm__ volatile(
+				"mov x0, %0\n\t"
+				"mov x1, %1\n\t"
+				"mov x2, %2\n\t"
+				"mov x3, %3\n\t"
+				"mov x4, %4\n\t"
+				"mov x5, %5\n\t"
+				"mov x6, %6\n\t"
+				"mov x7, %7\n\t"
+				"mov x8, %8\n\t"
+				"mov x9, %9\n\t"
+				:
+				: "r"(threads_arr[idx].ctx.x0), "r"(threads_arr[idx].ctx.x1),
+				  "r"(threads_arr[idx].ctx.x2), "r"(threads_arr[idx].ctx.x3),
+				  "r"(threads_arr[idx].ctx.x4), "r"(threads_arr[idx].ctx.x5),
+				  "r"(threads_arr[idx].ctx.x6), "r"(threads_arr[idx].ctx.x7),
+				  "r"(threads_arr[idx].ctx.x8), "r"(threads_arr[idx].ctx.x9)
+				: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9");
+
+			__asm__ volatile(
+				"mov x10, %0\n\t"
+				"mov x11, %1\n\t"
+				"mov x12, %2\n\t"
+				"mov x13, %3\n\t"
+				"mov x14, %4\n\t"
+				"mov x15, %5\n\t"
+				"mov x16, %6\n\t"
+				"mov x17, %7\n\t"
+				"mov x18, %8\n\t"
+				"mov x19, %9\n\t"
+				:
+				: "r"(threads_arr[idx].ctx.x10), "r"(threads_arr[idx].ctx.x11),
+				  "r"(threads_arr[idx].ctx.x12), "r"(threads_arr[idx].ctx.x13),
+				  "r"(threads_arr[idx].ctx.x14), "r"(threads_arr[idx].ctx.x15),
+				  "r"(threads_arr[idx].ctx.x16), "r"(threads_arr[idx].ctx.x17),
+				  "r"(threads_arr[idx].ctx.x18), "r"(threads_arr[idx].ctx.x19)
+				: "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19");
+
+			__asm__ volatile(
+				"mov x20, %0\n\t"
+				"mov x21, %1\n\t"
+				"mov x22, %2\n\t"
+				"mov x23, %3\n\t"
+				"mov x24, %4\n\t"
+				"mov x25, %5\n\t"
+				"mov x26, %6\n\t"
+				"mov x27, %7\n\t"
+				"mov x28, %8\n\t"
+				:
+				: "r"(threads_arr[idx].ctx.x20), "r"(threads_arr[idx].ctx.x21),
+				  "r"(threads_arr[idx].ctx.x22), "r"(threads_arr[idx].ctx.x23),
+				  "r"(threads_arr[idx].ctx.x24), "r"(threads_arr[idx].ctx.x25),
+				  "r"(threads_arr[idx].ctx.x26), "r"(threads_arr[idx].ctx.x27),
+				  "r"(threads_arr[idx].ctx.x28)
+				: "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28");
+
+			threads_arr[idx].status = RUNNING;
+			__asm__ volatile(
+				"mov fp, %0\n\t" // Move the value to the frame pointer
+				"mov sp, %1\n\t" // Move the value to the stack pointer
+				"br %2\n\t"		 // Branch to the address contained in pc
+				:
+				: "r"(threads_arr[idx].ctx.fp), "r"(threads_arr[idx].ctx.sp), "r"(threads_arr[idx].ctx.pc)
+				: "fp", "sp" // Specify clobbered registers if any specific ones are affected
+			);
+
+			printf("in STOPPED if of yield, now need to resume yielded thread index %d\n", idx);
 		}
 		else
 		{
@@ -423,10 +474,8 @@ void SCHEDULER__yield(void)
 	else
 	{
 		printf("in YIELD - no more threads\n");
-
 		terminateProgram();
 	}
-
 	return;
 }
 
@@ -435,7 +484,6 @@ void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 						   void *arg)
 {
 
-	// printf("adding thread, size: %d, entry_point: %x, arg: %x\n",size, entry_point, arg);
 	threads_arr[size].entry_point = entry_point;
 	threads_arr[size].arg = arg;
 	threads_arr[size].status = READY;

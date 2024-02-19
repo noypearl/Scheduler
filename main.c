@@ -9,24 +9,31 @@ int thread_1(void *arg)
 	int number4 = 4;
 	int number5 = 5;
 	int number6 = 6;
-	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	// SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	while(1){
+		printf("A");
+		SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	}
 	printf("[T1] number (3) : %d\n", number3);
 	printf("[T1] number (4) : %d\n", number4);
-	printf("[T1] number (5) : %d\n", number5);
+	// printf("[T1] number (5) : %d\n", number5);
 	printf("[T1 END] Hello from thread 1 again!\r\n");
-	printf("[T1] number (6) : %d\n", number6);
+	// printf("[T1] number (6) : %d\n", number6);
 	return 0;
 }
 
 int thread_2(void *arg)
 {
 	printf("[T2 START] Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
-	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	while(1){
+		printf("B");
+		SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	}
 	int number6 = 6;
 	int number7 = 7;
 	int number8 = 8;
-	printf("number (6) : %d\n", number6);
-	printf("number (7) : %d\n", number7);
+	// printf("number (6) : %d\n", number6);
+	// printf("number (7) : %d\n", number7);
 	printf("number (8) : %d\n", number8);
 	printf("[T2 END] Hello from thread 2 again!\r\n");
 
@@ -38,7 +45,7 @@ int thread_3(void *arg)
 	printf("[T3 START] Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
 	int number8 = 8;
 	int number9 = 9;
-	printf("[T3] number (8) : %d\n", number8);
+	// printf("[T3] number (8) : %d\n", number8);
 	printf("[T3] number (9) : %d\n", number9);
 	printf("[T3 END] Hello from thread 3 again!\r\n");
 
