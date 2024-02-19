@@ -6,7 +6,7 @@
 // Wrapping thread with statuses
 typedef enum STATUS {
 	STOPPED,
-	WAITING,
+	READY,
 	RUNNING,
 	FINISHED
 };
@@ -105,6 +105,8 @@ void mytest(int first, int second, int third, int fourth){
 	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::);
 	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::);
 	__asm__ volatile ("mov %0, x29" : "=r"(newContext.fp) ::);
+	// int val = 3;
+	// __asm__ volatile ("mov x9, %0" : "=r"(val) ::);
 
     // printf("Program Counter: %p\n", newContext.pc);
     printf("TEST\n");
@@ -180,13 +182,16 @@ void SCHEDULER__schedule_threads(void){
                 
                 // apply stopped from yield - recover frame address, set thread to RUNNING, call it
         }
-        else if ( threadStatus == WAITING ){
-                printf("Waiting thread\n");
+        else if ( threadStatus == READY ){
+                printf("Ready thread\n");
                 initThread(nextThreadToHandleIndex);
         }
         else{
                 printf("Weird state arrived at schedule_threads, state: %d,  index: %d\n", threadStatus, nextThreadToHandleIndex);
         }
+
+		// TODO - next need to loop all the threads in memory PCB and if there's a thread that was saved - need to jump back to him. 
+
 	// TODO - schedule start scheduler
 	/*for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)*/
 	/*{*/
@@ -209,7 +214,7 @@ void SCHEDULER__schedule_threads(void){
 			/*}*/
 		/*}*/
 	/*}*/
-        sleep(5);
+        sleep(1);
     }
 
 }
@@ -233,7 +238,7 @@ void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 	// printf("adding thread, size: %d, entry_point: %x, arg: %x\n",size, entry_point, arg);
 	threads_arr[size].entry_point = entry_point;
 	threads_arr[size].arg = arg;
-	threads_arr[size].status = WAITING;
+	threads_arr[size].status = READY;
 	/*threads_arr[size].stopped_point = NULL;*/
 	size++;
 }
