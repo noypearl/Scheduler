@@ -14,12 +14,14 @@ int thread_1(void *arg)
 	printf("[T1] number (4) : %d\n", number4);
 	printf("[T1] number (5) : %d\n", number5);
 	printf("[T1 END] Hello from thread 1 again!\r\n");
+	printf("[T1] number (6) : %d\n", number6);
 	return 0;
 }
 
 int thread_2(void *arg)
 {
 	printf("[T2 START] Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
+	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
 	int number6 = 6;
 	int number7 = 7;
 	int number8 = 8;

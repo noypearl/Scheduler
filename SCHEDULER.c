@@ -112,7 +112,7 @@ int getNextThreadIndexToHandleIndex(int currIdx)
 		enum STATUS threadStatus = threads_arr[i].status;
 		if ((threadStatus != FINISHED) && (threadStatus != RUNNING) && (i != currIdx))
 		{
-			printf("Returning from getNextThreadIndexToHandleIndex, i: %d\n", i);
+			// printf("Returning from getNextThreadIndexToHandleIndex, i: %d\n", i);
 			return i;
 		}
 	}
