@@ -1,0 +1,7 @@
+*.swp
+*.vcxproj
+*.filters
+*.sdf
+*.sln
+*.o
+program
