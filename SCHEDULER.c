@@ -119,7 +119,7 @@ void SCHEDULER__schedule_threads(void){
 			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
-			printf("setting new SP:  %p\n", new_sp);
+			printf("[be4 init] setting new SP:  %p\n", new_sp);
 			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
 			threads_arr[nextThreadToHandleIndex].ctx.sp = new_sp;
 			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
@@ -198,19 +198,12 @@ void SCHEDULER__yield(void){
 	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::); // save regs
 	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::); // save regs
 	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
-	__asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::); 
+	__asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
 	newContext.pc = lr; // MIND = BLOWN!! by that I will continue to the rest of the function by calling to lr
 	
 	threads_arr[idx].ctx = newContext;
 	u_int64_t n;
 	newContext.lr = newContext.lr & 0xfffffff;
-	// printf("addr of 1 line after the thread: %p\n", (newContext.lr));
-
-	// printf("calling returnAddr %p\n", returnAddr);
-	// void (*foo)(void) = (void (*)())returnAddr;
-	// foo();
-	// __asm__ volatile ("mov x1, 0"); // restore sp
-	// __asm__ volatile ("add x1, x1 , pc"); 
     int threadToStartOrResumeIndex = -1;
 	/* Now we need to run the next thread - I couldn't find a way to terminate this func so I'm 
 	calling the next thread
@@ -219,20 +212,15 @@ void SCHEDULER__yield(void){
         enum STATUS threadStatus = threads_arr[threadToStartOrResumeIndex].status;
         if( threadStatus == READY  && idx != threadToStartOrResumeIndex){ // so we won't run the thread forever
 		// TODO - test if the addon is ok
-			printf("[in yield while loop] Found thread to resume, number: %d\n", threadToStartOrResumeIndex);
-			// uint64_t curr_sp = 0;
-			// uint64_t curr_lr = 0;
-			// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-			// __asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
-			// uint64_t* new_sp = 0;
-			// new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
-			// printf("setting new SP:  %p\n", new_sp);
-			// __asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
-			// threads_arr[threadToStartOrResumeIndex].ctx.sp = new_sp;
+			printf("[in yield while loop] Found thread to start, number: %d\n", threadToStartOrResumeIndex);
+			/**
+			 * at this point I should stop the current thread. And also call initThread. Maybe injecting asm ret will do?
+			 * o**/
+
+			printf("CALLING RET");
+			// __asm__ volatile ("ret"); // copy var to sp
 			printf("initializing thread\n");
 			initThread(threadToStartOrResumeIndex);
-			// __asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // copy var to sp
-			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
 			break;
 		}
 		else if (threadStatus == STOPPED && idx != threadToStartOrResumeIndex){

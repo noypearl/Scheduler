@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-Wall -g -no-pie -O0
+CFLAGS=-Wall -g -no-pie -O0 -Winline-asm -Wunused-variable
 
 all: program
 

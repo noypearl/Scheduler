@@ -40,7 +40,7 @@ int thread_2(void *arg)
 	uint64_t curr_sp = 0;
 	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 	// printf("T2: curr_sp : %p\n", curr_sp);
-	SCHEDULER__yield();
+	// SCHEDULER__yield();
 	// thread_1(NULL);
 	printf("Hello from thread 2 again!\r\n");
 
