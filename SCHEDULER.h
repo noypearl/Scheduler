@@ -18,4 +18,6 @@ void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 
 void SCHEDULER__init(void);
 
+// added new
+void SCHEDULER__print_thread(int index);
 #endif

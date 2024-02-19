@@ -34,7 +34,7 @@ int thread_3(void *arg)
 
 	return 0;
 }
-
+				
 
 int thread_1_arg = 0;
 int thread_2_arg = 1;
@@ -56,10 +56,12 @@ int main(void)
 	SCHEDULER__init();
 
 	/* Add all threads to the scheduler. */
-	 for (i = 0; i < sizeof(threads)/sizeof(threads[0]); ++i) {
-	 	SCHEDULER__add_thread(threads[i].entry_point, 
-	 	threads[i].arg);
-	}
+	 // for (i = 0; i < sizeof(threads)/sizeof(threads[0]); ++i) {
+ 	printf("THREADS ARG %p\n", threads[2].arg);
+ 	SCHEDULER__add_thread(threads[2].entry_point, 
+ 	threads[2].arg);
+ 	SCHEDULER__print_thread(1);
+	// }
 
 	// SCHEDULER__schedule_threads();
 

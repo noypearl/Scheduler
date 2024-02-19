@@ -1,3 +1,6 @@
+#include <stdio.h>
+
 int THREAD__entry_point_t(void *arg){
-	return 1234;
+	printf("Doing something MALICOUS in THREAD__entry_point_t %p\n", arg);
+	return *(int *)arg;
 }
