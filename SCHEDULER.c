@@ -28,39 +28,39 @@ The return value is passed back in register x0, or in x1 as well if it's 128 bit
 The x19 to x30 and sp registers must be preserved across function calls.
 */
 typedef struct {
-	uint64_t pc; // program counter (r15) -> current instruction executed
-	uint64_t sp; // stack pointer (sp)
-	uint64_t lr; // return addr  (x30)
+	uint64_t *pc; // program counter (r15) -> current instruction executed
+	uint64_t *sp; // stack pointer (sp)
+	uint64_t *lr; // return addr  (x30)
 	uint64_t *fp; // frame pointer (x29)
-	uint64_t x0; 
-	uint64_t x1; 
-	uint64_t x2; 
-	uint64_t x3; 
-	uint64_t x4; 
-	uint64_t x5; 
-	uint64_t x6; 
-	uint64_t x7; 
-	uint64_t x8; 
-	uint64_t x9;
-	uint64_t x10;
-	uint64_t x11;
-	uint64_t x12;
-	uint64_t x13;
-	uint64_t x14;
-	uint64_t x15;
-	uint64_t x16;
-	uint64_t x17;
-	uint64_t x18;
-	uint64_t x19;
-	uint64_t x20;
-	uint64_t x21;
-	uint64_t x22;
-	uint64_t x23;
-	uint64_t x24;
-	uint64_t x25;
-	uint64_t x26;
-	uint64_t x27;
-	uint64_t x28;
+	uint64_t *x0; 
+	uint64_t *x1; 
+	uint64_t *x2; 
+	uint64_t *x3; 
+	uint64_t *x4; 
+	uint64_t *x5; 
+	uint64_t *x6; 
+	uint64_t *x7; 
+	uint64_t *x8; 
+	uint64_t *x9;
+	uint64_t *x10;
+	uint64_t *x11;
+	uint64_t *x12;
+	uint64_t *x13;
+	uint64_t *x14;
+	uint64_t *x15;
+	uint64_t *x16;
+	uint64_t *x17;
+	uint64_t *x18;
+	uint64_t *x19;
+	uint64_t *x20;
+	uint64_t *x21;
+	uint64_t *x22;
+	uint64_t *x23;
+	uint64_t *x24;
+	uint64_t *x25;
+	uint64_t *x26;
+	uint64_t *x27;
+	uint64_t *x28;
 	uint64_t *testlr;
 } context;
 
@@ -125,10 +125,6 @@ void thread_dieded(){
 	if ( idx != -1 && idx < size ){ 
 		if(threads_arr[idx].status == READY){
 		printf("Next should handle thread index %d\n", idx);
-			uint64_t curr_sp = 0;
-			uint64_t curr_lr = 0;
-			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
 			uint64_t dieded_addr = &thread_dieded;
@@ -141,6 +137,7 @@ void thread_dieded(){
 	}
 	// arriving here when a thread was yielded and now need to resume
 		else if(threads_arr[idx].status == STOPPED){ // need to CONTEXT SWITCH! 
+		__asm__ volatile ("mov lr, %0" : : "r" (threads_arr[idx].ctx.lr) : "lr"); // copy var to lr
 			printf("NEED TO CONTEXT SWITCH and continue thread %d yo, val: %d\n", idx, threads_arr[idx].ctx.sp);
 			// printf("PC VAL: %x", threads_arr[idx].ctx.pc);
 		__asm__ volatile (
@@ -154,38 +151,41 @@ void thread_dieded(){
 		"mov x7, %7\n\t"
 		"mov x8, %8\n\t"
 		"mov x9, %9\n\t"
+		"mov x10, %10\n\t"
+		"mov x11, %11\n\t"
+		"mov x12, %12\n\t"
 		:
 		: "r" (threads_arr[idx].ctx.x0), "r" (threads_arr[idx].ctx.x1),
 		"r" (threads_arr[idx].ctx.x2), "r" (threads_arr[idx].ctx.x3),
 		"r" (threads_arr[idx].ctx.x4), "r" (threads_arr[idx].ctx.x5),
 		"r" (threads_arr[idx].ctx.x6), "r" (threads_arr[idx].ctx.x7),
-		"r" (threads_arr[idx].ctx.x8), "r" (threads_arr[idx].ctx.x9)
-		: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+		"r" (threads_arr[idx].ctx.x8), "r" (threads_arr[idx].ctx.x9),
+		"r" (threads_arr[idx].ctx.x10), "r" (threads_arr[idx].ctx.x11),
+		"r" (threads_arr[idx].ctx.x12)
+		: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12"
 		);
-		__asm__ volatile (
-			"mov x10, %0\n\t"
-			"mov x11, %1\n\t"
-			"mov x12, %2\n\t"
-			"mov x13, %3\n\t"
-			"mov x14, %4\n\t"
-			"mov x15, %5\n\t"
-			"mov x16, %6\n\t"
-			"mov x17, %7\n\t"
-			"mov x18, %8\n\t"
-			"mov x19, %9\n\t"
-			:
-			: "r" (threads_arr[idx].ctx.x10), "r" (threads_arr[idx].ctx.x11),
-			"r" (threads_arr[idx].ctx.x12), "r" (threads_arr[idx].ctx.x13),
-			"r" (threads_arr[idx].ctx.x14), "r" (threads_arr[idx].ctx.x15),
-			"r" (threads_arr[idx].ctx.x16), "r" (threads_arr[idx].ctx.x17),
-			"r" (threads_arr[idx].ctx.x18), "r" (threads_arr[idx].ctx.x19)
-			: "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19"
-		);
-		__asm__ volatile ("mov lr, %0" : : "r" (threads_arr[idx].ctx.lr) : "lr"); // copy var to sp
+		// TODO - fix registers issue - registers aren't updated!
+		// __asm__ volatile (
+		// 	"mov x10, %0\n\t"
+		// 	"mov x11, %1\n\t"
+		// 	"mov x12, %2\n\t"
+		// 	"mov x13, %3\n\t"
+		// 	"mov x14, %4\n\t"
+		// 	"mov x15, %5\n\t"
+		// 	"mov x16, %6\n\t"
+		// 	"mov x17, %7\n\t"
+		// 	"mov x18, %8\n\t"
+		// 	"mov x19, %9\n\t"
+		// 	:
+		// 	: "r" (threads_arr[idx].ctx.x10), "r" (threads_arr[idx].ctx.x11),
+		// 	"r" (threads_arr[idx].ctx.x12), "r" (threads_arr[idx].ctx.x13),
+		// 	"r" (threads_arr[idx].ctx.x14), "r" (threads_arr[idx].ctx.x15),
+		// 	"r" (threads_arr[idx].ctx.x16), "r" (threads_arr[idx].ctx.x17),
+		// 	"r" (threads_arr[idx].ctx.x18), "r" (threads_arr[idx].ctx.x19)
+		// 	: "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19"
+		// );
 			// tODO - rest of registers
 			// debugger();
-			printf("PC VAL: %llx", threads_arr[idx].ctx.pc);
-			printf("SP VAL: %llx", threads_arr[idx].ctx.sp);
 			__asm__ volatile (
 				"mov fp, %0\n\t"  // Move the value to the frame pointer
 				"mov sp, %1\n\t"  // Move the value to the stack pointer
@@ -196,7 +196,6 @@ void thread_dieded(){
 			);
 			// __asm__ volatile ("mov fp, %0" : : "r" (threads_arr[idx].ctx.fp) : "fp"); // copy var to sp
 			// __asm__ volatile ("mov sp, %0" : : "r" (threads_arr[idx].ctx.sp) : "sp"); // copy var to sp
-			__asm__ volatile ( "BR %0" : : "r" (threads_arr[idx].ctx.pc):);  // WILL IT WORK?
 			// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
 			// __asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
 	}
@@ -232,9 +231,6 @@ void SCHEDULER__schedule_threads(void){
 		uint64_t* new_sp = 0;
 		new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
 		uint64_t dieded_addr = &thread_dieded;
-		// dieded_addr = dieded_addr & 0xfffffff;
-		// new_sp[0] = &thread_dieded;
-		// new_sp[1] = &thread_dieded;
 		threads_arr[idx].ctx.sp = new_sp;
 		printf("NEW SP: %p, IDX: %d, VAL: %d\n", new_sp, idx, threads_arr[idx].ctx.sp);
 		threads_arr[idx].ctx.lr = dieded_addr;
@@ -288,14 +284,14 @@ void SCHEDULER__print_threads(void){
  * ARM: We need to save the context and set LR   */
 void SCHEDULER__yield(void){
 	printf("in YIELD at 1st line!\n");
-	context newContext;
+	context newContext = {};
 	uint64_t returnAddr; // 1 line before yield()
 	uint64_t *prev_sp; //previous stack pointer to restore
 	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
 	uint64_t *local_sp; // 1 line after field()
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.testlr) ::); 
-	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
 	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
+	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
 
 	newContext.lr = *(newContext.fp+1);
@@ -354,7 +350,8 @@ void SCHEDULER__yield(void){
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // we shouldn't change lr since it should return to dieded func
 	threads_arr[idx].status = STOPPED;
 	//  CHANGING HERE! setting SP to FP plus 16 bytes
-	newContext.sp = newContext.fp+16; // preserve sp
+	newContext.sp = newContext.fp+2; // preserve sp
+	printf("NEW CONTEXT: fp: %x sp: %x ", newContext.sp, newContext.fp);
 	threads_arr[idx].ctx = newContext;
 	// printf("Curr sp from yield: %d ", newContext.sp);
     int threadToStartOrResumeIndex = getNextThreadIndexToHandleIndex(idx);
@@ -377,18 +374,12 @@ void SCHEDULER__yield(void){
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
 			uint64_t dieded_addr = &thread_dieded;
-			// dieded_addr = dieded_addr & 0xfffffff;
-			// new_sp[0] = &thread_dieded;
-			// new_sp[1] = &thread_dieded;
-			*(new_sp) = 0x333333;// avoid stack frame stp / ldp fp,lr issue
-			*(new_sp + 0x10) = 0x111111;// avoid stack frame stp / ldp fp,lr issue
-			*(new_sp + 0x14) = 0x222222;// avoid stack frame stp / ldp fp,lr issue
+			*(new_sp) = dieded_addr;// avoid stack frame stp / ldp fp,lr issue
+			*(new_sp+1) = 0x33333333;// avoid stack frame stp / ldp fp,lr issue
 			threads_arr[idx].ctx.sp = new_sp;
 			printf("[yield]NEW SP: %d, IDX: %d, VAL: %d\n", new_sp, idx, threads_arr[idx].ctx.sp);
 			threads_arr[idx].ctx.lr = dieded_addr;
-			// __asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
-			// printf("[be4 init] setting new SP:  %p\n", new_sp);
-			// __asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
+		
 			__asm__ volatile (
 				"mov lr, %0\n\t"  // Set lr to dieded_addr
 				"mov sp, %1"      // Set sp to new_sp
@@ -396,8 +387,16 @@ void SCHEDULER__yield(void){
 				: "r" (dieded_addr), "r" (new_sp) // Input operands
 				: "lr", "sp" // Clobbered registers
 			);
+				// trying to fix bug and push return addr
+		// 	__asm__ volatile (
+		// 	"sub sp, sp, #8\n\t" // Decrement the stack pointer by 8 bytes for a 64-bit value
+		// 	"str %0, [sp]"       // Store the value at the new top of the stack (address in sp)
+		// 	:                     // No output operands
+		// 	: "r"(dieded_addr)          // Input operand: the value to push
+		// 	: "sp"                // Clobber list: indicates that this modifies the stack pointer
+		// );
 
-			// printf("idx in YIELD::: %d", idx);
+
 			threads_arr[idx].status = RUNNING;
 			// threads_arr[idx].entry_point += 8;
 			__asm__ volatile ( "BR %0" : : "r" (threads_arr[idx].entry_point):); // TODO - solve argument that's printed
