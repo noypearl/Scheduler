@@ -369,25 +369,19 @@ void SCHEDULER__yield(void){
 	uint64_t *prev_sp; //previous stack pointer to restore
 	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
 	uint64_t *local_sp; // 1 line after field()
-	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.testlr) ::); 
 	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::);
 	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); 
 	newContext.fp = *newContext.fp; // to get the right fp from before yield() call
-	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
 
 	newContext.lr = *(newContext.fp+1);
-	// printf("NOI FP: %llx\n", newContext.testlr);
-	// printf("NOI2 FP: %x\n", *(newContext.fp+1));
 	newContext.pc = newContext.lr; // MIND = BLOWN!! by that I will continue to the rest of the function by calling to lr
 
 
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // we shouldn't change lr since it should return to dieded func
 	threads_arr[idx].status = STOPPED;
-	//  CHANGING HERE! setting SP to FP plus 16 bytes
 	newContext.sp = newContext.fp+2; // preserve sp
 	printf("NEW CONTEXT: fp: %x sp: %x ", newContext.sp, newContext.fp);
 	threads_arr[idx].ctx = newContext;
-	// printf("Curr sp from yield: %d ", newContext.sp);
     int threadToStartOrResumeIndex = getNextThreadIndexToHandleIndex(idx);
 	idx = threadToStartOrResumeIndex; // changing here since we use global variable and can't access threadToStartOrResumeIndex because we change the stack and it's a stack variable!
 	printf("YO in yield! nextThreadToHandleIndex is: %d\n", threadToStartOrResumeIndex);
@@ -421,26 +415,15 @@ void SCHEDULER__yield(void){
 				: "r" (dieded_addr), "r" (new_sp) // Input operands
 				: "lr", "sp" // Clobbered registers
 			);
-				// trying to fix bug and push return addr
-		// 	__asm__ volatile (
-		// 	"sub sp, sp, #8\n\t" // Decrement the stack pointer by 8 bytes for a 64-bit value
-		// 	"str %0, [sp]"       // Store the value at the new top of the stack (address in sp)
-		// 	:                     // No output operands
-		// 	: "r"(dieded_addr)          // Input operand: the value to push
-		// 	: "sp"                // Clobber list: indicates that this modifies the stack pointer
-		// );
 
 
 			threads_arr[idx].status = RUNNING;
-			// threads_arr[idx].entry_point += 8;
 			__asm__ volatile ( "BR %0" : : "r" (threads_arr[idx].entry_point):); // TODO - solve argument that's printed
 		}
 		// Resume thread
 		else if ( threads_arr[idx].status == STOPPED){
-			// TODO - difficult part
 			printf("in yield, now need to handle thread index %d. Exiting\n", idx);
 			exit(1);
-			// ACTUALLY YIELD LOGIC - SWITCH CONTEXT WITH NEXT ONE
 		}
 		else{
 		printf("Unexpected state of thread in yield\n");
@@ -469,5 +452,4 @@ void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 void SCHEDULER__test(){
 	int index = 1;
 	printf("testing TEST addr %x\n", threads_arr[index].entry_point(index));
-	// threads[index].entry_point(threads[index].arg);
 }
