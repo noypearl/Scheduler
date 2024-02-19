@@ -1,7 +1,32 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "THREAD.h"
+// #include <capstone/capstone.h>
 
+
+
+// void print_instruction_at_address(void* address) {
+//     csh handle;
+//     cs_insn *insn;
+//     size_t count;
+
+//     if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) {
+//         return;
+//     }
+
+//     count = cs_disasm(handle, address, 16, (uintptr_t)address, 0, &insn);
+//     if (count > 0) {
+//         size_t j;
+//         for (j = 0; j < count; j++) {
+//             printf("0x%"PRIx64":\t%s\t\t%s\n", insn[j].address, insn[j].mnemonic, insn[j].op_str);
+//         }
+//         cs_free(insn, count);
+//     } else {
+//         printf("ERROR: Failed to disassemble\n");
+//     }
+
+//     cs_close(&handle);
+// }
 
 // Wrapping thread with statuses
 typedef enum STATUS {
@@ -105,12 +130,15 @@ void mytest(int first, int second, int third, int fourth){
 	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::);
 	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::);
 	__asm__ volatile ("mov %0, x29" : "=r"(newContext.fp) ::);
+	// __asm__ volatile ("adr x0, %0" : "=r"(newContext.pc) ::);
+	// __asm__ volatile ("mov %0, pc" : "=r"(newContext.pc) ::);
 	// int val = 3;
 	// __asm__ volatile ("mov x9, %0" : "=r"(val) ::);
 
     // printf("Program Counter: %p\n", newContext.pc);
     printf("TEST\n");
     printf("Stack Pointer: %p\n", newContext.sp);
+    // printf("Program Counter: %p\n", newContext.pc);
     printf("X9: %p\n", newContext.x9);
     printf("X5: %p\n", newContext.x5);
     printf("X4: %p\n", newContext.x4);
@@ -125,17 +153,38 @@ void mytest(int first, int second, int third, int fourth){
 /* Yield function, to be used by the schedulers threads.
  * Once a thread calls yield, execution should continue from a 
  * different thread. 
- * ARM: We need to save the context   */
+ * ARM: We need to save the context and set LR   */
 void SCHEDULER__yield(void){
-	mytest(3, 7,126,9);
+	printf("in YIELD at 1st line!\n");
+	uint64_t returnAddr;
+	uint64_t *sp;
+	uint64_t *fp;
+	// __asm__ volatile ("mov %0, x30" : "=r"(returnAddr) ::); // TODO - set context
+	__asm__ volatile ("mov %0, sp" : "=r"(sp) ::); // TODO - set context
+	__asm__ volatile ("mov %0, fp" : "=r"(fp) ::); // TODO - set context
+	__asm__ volatile ("ldur   %0, [x29, #0x8]" : "=r"(returnAddr) ::); // TODO - set context
+	// __asm__ volatile ("mov %0, sp, #0x34" : "=r"(returnAddr) ::); // TODO - set context
+	// __asm__ volatile ("add %0, sp, #0x30" : "=r"(fp) ::); // TODO - set context
+	// returnAddr = *(sp+0x34)& 0xfffffffff;
+	// returnAddr = *(sp+0x34) & 0xfffffffff;
+	// returnAddr = *(fp+8) & 0xfffffffff;
+	// uint64_t retAddr2 = *(fp -8) & 0xfffffffff;
+	// print_instruction_at_address((void*)returnAddr);
+	printf("return addr in Yield(): %p\n", returnAddr);
+	printf("sp in Yield(): %p\n", (sp));
+	printf("fp in Yield(): %p\n", (fp));
+	printf("retAddr in fp: %p\n", *(fp+8));
+	printf("calling returnAddr %p\n", returnAddr);
+	void (*foo)(void) = (void (*)())returnAddr;
+	foo();
+	// mytest(3, 7,126,9);
     printf("in SCHEDULER__yield\n");
     int nextThreadIndex = -1;
     int i = 0;
     printf("in YIELD!\n");
 
+	// need to preserve state & arguments
 	// context ctx = getNewContext();
-    /*__asm__("movl %edx, %eax\n\t"*/
-        /*"addl $2, %eax\n\t");*/
     
 // TODO - schedule start scheduler
 	/*for (i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)*/
@@ -146,14 +195,16 @@ void SCHEDULER__yield(void){
 void resumeThread(int index){
     printf("resumeThread\n");
     threads_arr[index].status = RUNNING;
-    /**((int *)(threads_arr[index].stopped_point));*/
+    int status = threads_arr[index].entry_point(threads_arr[index].arg);
+	threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
 
 }
 
 void initThread(int index){
     printf("initThread\n");
     threads_arr[index].status = RUNNING;
-    threads_arr[index].entry_point(threads_arr[index].arg);
+    int status = threads_arr[index].entry_point(threads_arr[index].arg);
+	threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
         
 }
 // Loops all thread array and returns the index of the next thread we shuold handle, 
@@ -177,13 +228,13 @@ void SCHEDULER__schedule_threads(void){
     while((nextThreadToHandleIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
         enum STATUS threadStatus = threads_arr[nextThreadToHandleIndex].status;
         if( threadStatus == STOPPED ){
-                printf("Stopped thread\n");
+                // printf("Stopped thread\n");
                 resumeThread(nextThreadToHandleIndex);
                 
                 // apply stopped from yield - recover frame address, set thread to RUNNING, call it
         }
         else if ( threadStatus == READY ){
-                printf("Ready thread\n");
+                // printf("Ready thread\n");
                 initThread(nextThreadToHandleIndex);
         }
         else{

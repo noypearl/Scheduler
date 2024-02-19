@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-Wall -g 
+CFLAGS=-Wall -g -no-pie
 
 all: program
 
