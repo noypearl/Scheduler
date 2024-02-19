@@ -4,18 +4,30 @@
 
 int thread_1(void *arg)
 {
-	printf("Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
-	int number = 3;
-	int number2 = 4;
-	int number3 = 5;
-	int number4 = 6;
+	printf("[START] Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
+	int number3= 3;
+	int number4 = 4;
+	int number5 = 5;
+	int number6 = 6;
+	int number7 = 7;
+	int number8 = 8;
 	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	int number9 = 9;
+	int number10 = 10;
+	int number11 = 11;
+	int number12 = 12;
         // for (int i = 0; i < 10; i++) {
-	printf("Hello from thread 1 again!\r\n");
-	printf("number (3) : %d\n", number);
-	printf("number (3) addr : %p\n", &number);
-	printf("number2 (4) : %d\n", number2);
-	printf("number2 (4) addr : %p\n", &number2);
+	printf("[END] Hello from thread 1 again!\r\n");
+	printf("number (3) : %d\n", number3);
+	printf("number (4) : %d\n", number4);
+	printf("number (5) : %d\n", number5);
+	printf("number (6) : %d\n", number6);
+	printf("number (7) : %d\n", number7);
+	printf("number (8) : %d\n", number8);
+	printf("number (9) : %d\n", number9);
+	printf("number (10) : %d\n", number10);
+	printf("number (11) : %d\n", number11);
+	printf("number (12) : %d\n", number12);
 	uint64_t curr_sp = 0;
 	__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 	printf("T1: curr_sp : %p\n", curr_sp);
@@ -25,13 +37,11 @@ int thread_1(void *arg)
 int thread_2(void *arg)
 {
 	printf("Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
-
 	uint64_t curr_sp = 0;
-	__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-	printf("T2: curr_sp : %p\n", curr_sp);
-	// SCHEDULER__yield();
+	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+	// printf("T2: curr_sp : %p\n", curr_sp);
+	SCHEDULER__yield();
 	// thread_1(NULL);
-
 	printf("Hello from thread 2 again!\r\n");
 
 	return 0;
@@ -42,11 +52,20 @@ int thread_3(void *arg)
 	uint64_t curr_sp = 0;
 	__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 	printf("T3: curr_sp : %p\n", curr_sp);
-	// printf("Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
+	printf("Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
 
-	/*SCHEDULER__yield();*/
+	int Xnumber3= 3;
+	int Xnumber4 = 4;
+	SCHEDULER__yield();
 
-	// printf("Hello from thread 3 again!\r\n");
+	int Xnumber5 = 5;
+	int Xnumber6 = 6;
+
+	printf("[T3] number (3) : %d\n", Xnumber3);
+	printf("[T3] number (4) : %d\n", Xnumber4);
+	printf("[T3] number (5) : %d\n", Xnumber5);
+	printf("[T3] number (6) : %d\n", Xnumber6);
+	printf("Hello from thread 3 again!\r\n");
 
 	return 0;
 }
