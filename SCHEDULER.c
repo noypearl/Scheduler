@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "THREAD.h"
 #include <sys/types.h>
@@ -64,95 +65,26 @@ void SCHEDULER__init(void){
 	currSize = 0;
 }
 
-/* Yield function, to be used by the schedulers threads.
- * Once a thread calls yield, execution should continue from a 
- * different thread. 
- * ARM: We need to save the context and set LR   */
-void SCHEDULER__yield(void){
-	printf("in YIELD at 1st line!\n");
-	context newContext;
-	uint64_t returnAddr; // 1 line before yield()
-	uint64_t *prev_sp; //previous stack pointer to restore
-	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
-	uint64_t *sp = threads_arr[idx].ctx.sp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
-	uint64_t *lr; // 1 line after field()
-	uint64_t *local_sp; // 1 line after field()
-	__asm__ volatile ("mov %0, x8" : "=r"(newContext.x8) ::);
-	__asm__ volatile ("mov %0, fp" : "=r"(fp) ::); 
-	__asm__ volatile ("mov %0, sp" : "=r"(local_sp) ::); 
-	// int offset = *(fp)-*(sp);
-	// printf("OFFSET: %d\n", offset);
-	
-	printf("stored sp: sp in Yield(): %p\n", sp);
-	printf("stored sp: sp in Yield(): %p\n", *(sp+1));
-	printf("stored sp: sp in Yield(): %p\n", *(sp+2));
-	printf("stored sp: sp in Yield(): %p\n", *(sp+20));
-	// printf("local sp: sp in Yield(): %p\n", local_sp);
-	int64_t *targetInt;
-	__asm__ volatile ("mov x1, 0" ::); 
-
-	printf("TEST stored sp value: %d\n", targetInt);
-	printf("TEST stored sp value add: %p\n", &targetInt);
-	// printf("stored sp value dump: %10p\n", sp);
-	// printf("stored sp value+4: %p\n", (sp+4));
-	// printf("stored sp value+8: %p\n", (sp+8));
-	// printf("stored sp value+12: %p\n",(sp+0x1c+4));
-
-	// prev_sp = sp + offset + 32; // added 32 to skip other registers
-	__asm__ volatile ("mov %0, lr" : "=r"(lr) ::);  // addr of 1 line after the call to the thread 
-	
-	__asm__ volatile ("mov %0, x1" : "=r"(newContext.x1) ::);
-	__asm__ volatile ("mov %0, x2" : "=r"(newContext.x2) ::);
-	__asm__ volatile ("mov %0, x3" : "=r"(newContext.x3) ::);
-	__asm__ volatile ("mov %0, x4" : "=r"(newContext.x4) ::);
-	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::);
-	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::);
-	u_int64_t n;
-	__asm__ volatile ("ldur   %0, [sp, #0x52]" : "=r"(n) ::); // addr of 1 line before the call to the thread function
-	// printf("return addr in Yield(): %p\n", returnAddr);
-	int num1;
-	int num2;
-	__asm__ volatile ("mov %0, x27" : "=r"(newContext.x10) ::);
-	// __asm__ volatile ("ldur   %1, [%0, #0x8]" : "=r"(prev_sp,num1) ::); // addr of 1 line before the call to the thread function
-	printf("num1: %d\n",*(sp+8));
-	printf("num2: %d\n",*(sp+12));
-	printf("num3: %d\n",*(sp+16));
-	// lr = *(lr) & 0xfffffff;
-	printf("addr of 1 line after the thread: %p\n", (lr));
-	printf("fp in Yield(): %p\n", (fp));
-	printf("calling returnAddr %p\n", returnAddr);
-	// void (*foo)(void) = (void (*)())returnAddr;
-	// foo();
-	// mytest(3, 7,126,9);
-    int nextThreadIndex = -1;
-    int i = 0;
-
-	// need to preserve state & arguments
-	// context ctx = getNewContext();
-    
-// TODO - schedule start scheduler
-	/*for (i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)*/
-	/*{	*/
-
-}
-
-void resumeThread(int index){
-    printf("resumeThread\n");
-    threads_arr[index].status = RUNNING;
-    int status = threads_arr[index].entry_point(threads_arr[index].arg);
-	// threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
-
-}
-
 void initThread(int index){
-    printf("initThread\n");
+    // printf("initThread\n");
     threads_arr[index].status = RUNNING;
     int status = threads_arr[index].entry_point(threads_arr[index].arg);
 	// __asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // restore sp
 	// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
 	// idx = index; // setting index of running thread
 				 // threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
+	threads_arr[index].status = FINISHED;
 }
+void resumeThread(int index){
+    printf("resumeThread\n");
+	// TODO - restore registers & sp & jump to pc
+    threads_arr[index].status = RUNNING;
+    int status = threads_arr[index].entry_point(threads_arr[index].arg);
+
+	// threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
+
+}
+
 // Loops all thread array and returns the index of the next thread we shuold handle, 
 // return -1 if no threads to handle
 int getNextThreadIndexToHandle(void){
@@ -169,7 +101,7 @@ int getNextThreadIndexToHandle(void){
 /* Start the scheduler. This function will return only when all
  * threads finished their work. */
 void SCHEDULER__schedule_threads(void){
-    printf("%s", "in schedule_threads\n");
+    // printf("%s", "in schedule_threads\n");
     int nextThreadToHandleIndex = -1;
     while((nextThreadToHandleIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
         enum STATUS threadStatus = threads_arr[nextThreadToHandleIndex].status;
@@ -187,7 +119,7 @@ void SCHEDULER__schedule_threads(void){
 			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
-			printf("setting new SP: initThread: %p\n", new_sp);
+			printf("setting new SP:  %p\n", new_sp);
 			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
 			threads_arr[nextThreadToHandleIndex].ctx.sp = new_sp;
 			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
@@ -240,6 +172,92 @@ void SCHEDULER__print_threads(void){
 		printf("print_threads loop, index: %d, status: %d\n",i,threads_arr[i].status);	
 	}
 }
+
+/* Yield function, to be used by the schedulers threads.
+ * Once a thread calls yield, execution should continue from a 
+ * different thread. 
+ * ARM: We need to save the context and set LR   */
+void SCHEDULER__yield(void){
+	printf("in YIELD at 1st line!\n");
+	context newContext;
+	uint64_t returnAddr; // 1 line before yield()
+	uint64_t *prev_sp; //previous stack pointer to restore
+	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
+	uint64_t *sp = threads_arr[idx].ctx.sp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
+	uint64_t *lr; // 1 line after field()
+	uint64_t *local_sp; // 1 line after field()
+	__asm__ volatile ("mov %0, x0" : "=r"(newContext.x0) ::); // save regs
+	__asm__ volatile ("mov %0, x1" : "=r"(newContext.x1) ::); // save regs
+	__asm__ volatile ("mov %0, x2" : "=r"(newContext.x2) ::); // save regs
+	__asm__ volatile ("mov %0, x3" : "=r"(newContext.x3) ::); // save regs
+	__asm__ volatile ("mov %0, x4" : "=r"(newContext.x4) ::); // save regs
+	__asm__ volatile ("mov %0, x5" : "=r"(newContext.x5) ::); // save regs
+	__asm__ volatile ("mov %0, x6" : "=r"(newContext.x6) ::); // save regs
+	__asm__ volatile ("mov %0, x7" : "=r"(newContext.x7) ::); // save regs
+	__asm__ volatile ("mov %0, x8" : "=r"(newContext.x8) ::); // save regs
+	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::); // save regs
+	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::); // save regs
+	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
+	__asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::); 
+	// __asm__ volatile ("mov %0, pc" : "=r"(newContext.pc) ::); 
+	uint64_t curr_sp = 0;
+	uint64_t curr_lr = 0;
+	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+	// __asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
+	
+	int64_t *targetInt;
+	threads_arr[idx].ctx = newContext;
+
+	// printf("TEST stored sp value add: %p\n", &targetInt);
+	// printf("stored sp value dump: %10p\n", sp);
+	// printf("stored sp value+4: %p\n", (sp+4));
+	// printf("stored sp value+8: %p\n", (sp+8));
+	// printf("stored sp value+12: %p\n",(sp+0x1c+4));
+
+	// prev_sp = sp + offset + 32; // added 32 to skip other registers
+	// __asm__ volatile ("mov %0, lr" : "=r"(lr) ::);  // addr of 1 line after the call to the thread 
+	
+	u_int64_t n;
+	// __asm__ volatile ("ldur   %0, [sp, #0x52]" : "=r"(n) ::); // addr of 1 line before the call to the thread function
+	// printf("return addr in Yield(): %p\n", returnAddr);
+	// __asm__ volatile ("ldur   %1, [%0, #0x8]" : "=r"(prev_sp,num1) ::); // addr of 1 line before the call to the thread function
+	// printf("num1: %d\n",*(sp+8));
+	// printf("num2: %d\n",*(sp+12));
+	// printf("num3: %d\n",*(sp+16));
+	newContext.lr = newContext.lr & 0xfffffff;
+	printf("addr of 1 line after the thread: %p\n", (newContext.lr));
+
+	// printf("calling returnAddr %p\n", returnAddr);
+	// void (*foo)(void) = (void (*)())returnAddr;
+	// foo();
+	int64_t mypc;
+	// __asm__ volatile ("mov x1, 0"); // restore sp
+	// __asm__ volatile ("add x1, x1 , pc"); 
+	// __asm__ volatile ("mov x1, %0" : "=r"(mypc) ::);  // addr of 1 line after the call to the thread 
+	
+    __asm__(
+        "adr %0, 1f\n\t" // Get the address of the label '1'
+        "1:"            // Label '1'
+        : "=r" (mypc) // Output
+    );
+	printf("MY PC : %p", mypc);
+    int threadToStartIndex = -1;
+	/* Now we need to run the next thread - I couldn't find a way to terminate this func so I'm 
+	calling the next thread
+	*/
+
+    while((threadToStartIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
+        enum STATUS threadStatus = threads_arr[threadToStartIndex].status;
+        if( threadStatus == READY ){
+			initThread(threadToStartIndex);
+			break;
+			printf("[in yield] Found thread to resume, number: %d\n", threadToStartIndex);
+		}
+	}
+// TODO - schedule start scheduler
+	return;
+}
+
 
 /* Initialize a specific thread and add it to the thread pool. */
 void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
