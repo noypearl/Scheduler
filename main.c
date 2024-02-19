@@ -18,26 +18,26 @@ int thread_1(void *arg)
 	int number12 = 12;
         // for (int i = 0; i < 10; i++) {
 	printf("[END] Hello from thread 1 again!\r\n");
-	printf("number (3) : %d\n", number3);
-	printf("number (4) : %d\n", number4);
-	printf("number (5) : %d\n", number5);
-	printf("number (6) : %d\n", number6);
-	printf("number (7) : %d\n", number7);
-	printf("number (8) : %d\n", number8);
-	printf("number (9) : %d\n", number9);
-	printf("number (10) : %d\n", number10);
-	printf("number (11) : %d\n", number11);
-	printf("number (12) : %d\n", number12);
-	uint64_t curr_sp = 0;
-	__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-	printf("T1: curr_sp : %p\n", curr_sp);
+	// printf("number (3) : %d\n", number3);
+	// printf("number (4) : %d\n", number4);
+	// printf("number (5) : %d\n", number5);
+	// printf("number (6) : %d\n", number6);
+	// printf("number (7) : %d\n", number7);
+	// printf("number (8) : %d\n", number8);
+	// printf("number (9) : %d\n", number9);
+	// printf("number (10) : %d\n", number10);
+	// printf("number (11) : %d\n", number11);
+	// printf("number (12) : %d\n", number12);
+	// uint64_t curr_sp = 0;
+	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+	// printf("T1: curr_sp : %p\n", curr_sp);
 	return 0;
 }
 
 int thread_2(void *arg)
 {
 	printf("Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
-	uint64_t curr_sp = 0;
+	// uint64_t curr_sp = 0;
 	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 	// printf("T2: curr_sp : %p\n", curr_sp);
 	// SCHEDULER__yield();
@@ -50,21 +50,21 @@ int thread_2(void *arg)
 int thread_3(void *arg)
 {
 	uint64_t curr_sp = 0;
-	__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-	printf("T3: curr_sp : %p\n", curr_sp);
+	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+	// printf("T3: curr_sp : %p\n", curr_sp);
 	printf("Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
 
-	int Xnumber3= 3;
-	int Xnumber4 = 4;
-	SCHEDULER__yield();
+	// int Xnumber3= 3;
+	// int Xnumber4 = 4;
+	// SCHEDULER__yield();
 
-	int Xnumber5 = 5;
-	int Xnumber6 = 6;
+	// int Xnumber5 = 5;
+	// int Xnumber6 = 6;
 
-	printf("[T3] number (3) : %d\n", Xnumber3);
-	printf("[T3] number (4) : %d\n", Xnumber4);
-	printf("[T3] number (5) : %d\n", Xnumber5);
-	printf("[T3] number (6) : %d\n", Xnumber6);
+	// printf("[T3] number (3) : %d\n", Xnumber3);
+	// printf("[T3] number (4) : %d\n", Xnumber4);
+	// printf("[T3] number (5) : %d\n", Xnumber5);
+	// printf("[T3] number (6) : %d\n", Xnumber6);
 	printf("Hello from thread 3 again!\r\n");
 
 	return 0;

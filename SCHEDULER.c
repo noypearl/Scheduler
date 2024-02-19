@@ -92,65 +92,107 @@ int getNextThreadIndexToHandle(void){
 	{
 		enum STATUS threadStatus = threads_arr[i].status;
 		if(threadStatus != FINISHED && threadStatus != RUNNING){
-                    printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
+                    // printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
 			return i;
 		}
 	}
 	return -1;
 }
-/* Start the scheduler. This function will return only when all
- * threads finished their work. */
-void SCHEDULER__schedule_threads(void){
-    // printf("%s", "in schedule_threads\n");
-    int nextThreadToHandleIndex = -1;
-    while((nextThreadToHandleIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
-        enum STATUS threadStatus = threads_arr[nextThreadToHandleIndex].status;
-        if( threadStatus == STOPPED ){
-                // printf("Stopped thread\n");
-                resumeThread(nextThreadToHandleIndex);
-                
-                // apply stopped from yield - recover frame address, set thread to RUNNING, call it
-        }
-        else if ( threadStatus == READY ){
-                // printf("Ready thread\n");
-			printf("[in schedule threads loop] Jumping to : %d\n", nextThreadToHandleIndex);
+
+// Loops all thread array and returns the index of the next thread we shuold handle, 
+// return -1 if no threads to handle
+int getNextThreadIndexToHandleIndex(int currIdx){
+	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
+	{
+		enum STATUS threadStatus = threads_arr[i].status;
+		if((threadStatus != FINISHED )&& (threadStatus != RUNNING) && (i != currIdx)){
+			printf("Returning from getNextThreadIndexToHandle, i: %d\n", i);
+			return i;
+		}
+	}
+	return -1;
+}
+
+// Program should arrive here at the end
+void terminateProgram(void){
+	printf("No more threads to handle! YAY! \n");
+	exit(0);
+}
+
+void thread_dieded(){	
+	threads_arr[idx].status = FINISHED;
+	printf("DIEDED THREAD\n");
+	int nextThread = getNextThreadIndexToHandleIndex(idx);
+	// Context switch should be here
+	if ( nextThread != -1 && nextThread < size ){
+		printf("Next should handle thread index %d\n", nextThread);
 			uint64_t curr_sp = 0;
 			uint64_t curr_lr = 0;
 			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
 			uint64_t* new_sp = 0;
 			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
-			printf("[be4 init] setting new SP:  %p\n", new_sp);
+			uint64_t dieded_addr = &thread_dieded;
+			// dieded_addr = dieded_addr & 0xfffffff;
+			// new_sp[0] = &thread_dieded;
+			// new_sp[1] = &thread_dieded;
+			__asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
+			// printf("[be4 init] setting new SP:  %p\n", new_sp);
+			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
+			threads_arr[nextThread].ctx.sp = new_sp;
+			threads_arr[nextThread].ctx.lr = dieded_addr;
+			idx = nextThread; // setting index of running thread
+			__asm__ volatile ( "BR %0" : : "r" (threads_arr[nextThread].entry_point):); // TODO - solve argument that's printed
+	}
+	else{
+		terminateProgram();
+	}
+	// should run the next thread - do the context switch
+	// check if no threads to run - then exit(0)
+}
+// DO
+/* Start the scheduler. This function will return only when all
+ * threads finished their work. */
+void SCHEDULER__schedule_threads(void){
+    // printf("%s", "in schedule_threads\n");
+    int nextThreadToHandleIndex = getNextThreadIndexToHandle();
+	if (nextThreadToHandleIndex != -1){
+			uint64_t curr_sp = 0;
+			uint64_t curr_lr = 0;
+			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
+			uint64_t* new_sp = 0;
+			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
+			uint64_t dieded_addr = &thread_dieded;
+			// dieded_addr = dieded_addr & 0xfffffff;
+			// new_sp[0] = &thread_dieded;
+			// new_sp[1] = &thread_dieded;
+			__asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
+			// printf("[be4 init] setting new SP:  %p\n", new_sp);
 			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
 			threads_arr[nextThreadToHandleIndex].ctx.sp = new_sp;
-			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
-	// JUMP to entry point
-				__asm__ volatile(
-				"str %0, [sp]\n\t" : 
-				: "r" (threads_arr[nextThreadToHandleIndex+1].entry_point) // Input operand
-			: "memory", "sp" // Clobbered registers
-		);
-			// }
-			// if thread is final - then 
-			// else{
-			// 	printf("No next thread to jump to. Can't push addr for ret\n");
-			// }
+			threads_arr[nextThreadToHandleIndex].ctx.lr = dieded_addr;
+			idx = nextThreadToHandleIndex; // setting index of running thread
 			__asm__ volatile ( "BR %0" : : "r" (threads_arr[nextThreadToHandleIndex].entry_point):); // TODO - solve argument that's printed
-			// __asm__ volatile ("ret"); // copy var to sp
 			threads_arr[nextThreadToHandleIndex].status = RUNNING;
-			// initThread(nextThreadToHandleIndex);
 			// __asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // copy var to sp
 			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
-			threads_arr[nextThreadToHandleIndex].status = FINISHED; // TODO - verify that the status is changed
-			idx = nextThreadToHandleIndex; // setting index of running thread
         }
-        else{
-                printf("Weird state arrived at schedule_threads, state: %d,  index: %d\n", threadStatus, nextThreadToHandleIndex);
-        }
-
+	else {
+		terminateProgram();
+	}
+    // while((nextThreadToHandleIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
+        // enum STATUS threadStatus = threads_arr[nextThreadToHandleIndex].status;
+        // if( threadStatus == STOPPED ){
+                // printf("Stopped thread\n");
+                // resumeThread(nextThreadToHandleIndex);
+                
+                // apply stopped from yield - recover frame address, set thread to RUNNING, call it
+        // }
+        // if ( threadStatus == READY ){ //TODO - treat status STOPPED
+                // printf("Ready thread\n");
+			// printf("[in schedule threads loop] Jumping to : %d\n", nextThreadToHandleIndex);
         sleep(1);
-    }
-
 }
 
 
