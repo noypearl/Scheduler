@@ -370,8 +370,9 @@ void SCHEDULER__yield(void){
 	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
 	uint64_t *local_sp; // 1 line after field()
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.testlr) ::); 
-	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
-	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); // TODO - maybe I shouldn't change sp at that point since I mmap' it 2 functions before?
+	__asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::);
+	__asm__ volatile ("mov %0, fp" : "=r"(newContext.fp) ::); 
+	newContext.fp = *newContext.fp; // to get the right fp from before yield() call
 	// __asm__ volatile ("mov %0, lr" : "=r"(newContext.lr) ::); 
 
 	newContext.lr = *(newContext.fp+1);
