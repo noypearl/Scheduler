@@ -6,7 +6,7 @@ int thread_1(void *arg)
 {
 	printf("Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
 
-	/*SCHEDULER__yield();*/
+	// /*SCHEDULER__yield();*/ in yield I need to check the running process, set it to stopped and run the next one
 
 	printf("Hello from thread 1 again!\r\n");
 
@@ -19,7 +19,7 @@ int thread_2(void *arg)
 
 /*#	SCHEDULER__yield();*/
 
-	printf("Hello from thread 2 again!\r\n");
+	// printf("Hello from thread 2 again!\r\n");
 
 	return 0;
 }
@@ -36,8 +36,12 @@ int thread_3(void *arg)
 }
 				
 
-int thread_1_arg = 0;
-int thread_2_arg = 1;
+// int thread_1_arg = 0;
+// int thread_2_arg = 1;
+// int thread_3_arg = 1337;
+
+int thread_1_arg = 10;
+int thread_2_arg = 12;
 int thread_3_arg = 1337;
 
 struct {
@@ -51,16 +55,18 @@ struct {
 
 int main(void)
 {
-	size_t i = 0;
+	// size_t i = 0;
 
 	SCHEDULER__init();
-
+	// thread_2(&thread_1_arg);
 	/* Add all threads to the scheduler. */
-	 // for (i = 0; i < sizeof(threads)/sizeof(threads[0]); ++i) {
- 	printf("THREADS ARG %p\n", threads[2].arg);
- 	SCHEDULER__add_thread(threads[2].entry_point, 
- 	threads[2].arg);
- 	SCHEDULER__print_thread(1);
+	 for (int i = 0; i < sizeof(threads)/sizeof(threads[0]); i++) {
+ 	printf("[main] Adding threads at %d, entry_point: %x, arg: %x, \n", i, threads[i].entry_point, threads[i].arg);
+ 	SCHEDULER__add_thread(threads[i].entry_point,threads[i].arg);
+ }
+ 	SCHEDULER__print_threads();
+ 	SCHEDULER__schedule_threads();
+	SCHEDULER__test();
 	// }
 
 	// SCHEDULER__schedule_threads();
