@@ -62,10 +62,6 @@ int idx = 0; // current running thread
 void SCHEDULER__init(void){
 	// printf("%s", "in SCHEDULER__init\n");
 	currSize = 0;
-	// threads[0].entry_point = 0;
-	// threads[0].arg = 'a';
-
-	// TODO - initiallize threads array
 }
 
 /* Yield function, to be used by the schedulers threads.
@@ -144,7 +140,6 @@ void resumeThread(int index){
     printf("resumeThread\n");
     threads_arr[index].status = RUNNING;
     int status = threads_arr[index].entry_point(threads_arr[index].arg);
-	idx = index; // setting index of running thread
 	// threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
 
 }
@@ -152,19 +147,10 @@ void resumeThread(int index){
 void initThread(int index){
     printf("initThread\n");
     threads_arr[index].status = RUNNING;
-	uint64_t curr_sp = 0;
-	uint64_t curr_lr = 0;
-	__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
-	__asm__ volatile ("mov %0, sp" : "=r"(curr_lr) ::);  // copy sp to var
-	void* new_sp = 0;
-	new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
-	printf("setting new SP: initThread: %p\n", new_sp);
-	threads_arr[index].ctx.sp = new_sp;
     int status = threads_arr[index].entry_point(threads_arr[index].arg);
-	__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
 	// __asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // restore sp
 	// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
-	idx = index; // setting index of running thread
+	// idx = index; // setting index of running thread
 				 // threads_arr[index].status = FINISHED; // TODO - there's maybe a bug when yield() was called and the state is now FINISHED instead of STOPPED
 }
 // Loops all thread array and returns the index of the next thread we shuold handle, 
@@ -195,7 +181,20 @@ void SCHEDULER__schedule_threads(void){
         }
         else if ( threadStatus == READY ){
                 // printf("Ready thread\n");
-                initThread(nextThreadToHandleIndex);
+			uint64_t curr_sp = 0;
+			uint64_t curr_lr = 0;
+			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
+			__asm__ volatile ("mov %0, lr" : "=r"(curr_lr) ::);  // copy sp to var
+			uint64_t* new_sp = 0;
+			new_sp = mmap(NULL, 1024, PROT_READ|PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0 );
+			printf("setting new SP: initThread: %p\n", new_sp);
+			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
+			threads_arr[nextThreadToHandleIndex].ctx.sp = new_sp;
+			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
+			initThread(nextThreadToHandleIndex);
+			__asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // copy var to sp
+			__asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
+			idx = nextThreadToHandleIndex; // setting index of running thread
         }
         else{
                 printf("Weird state arrived at schedule_threads, state: %d,  index: %d\n", threadStatus, nextThreadToHandleIndex);
@@ -250,7 +249,6 @@ void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 	threads_arr[size].entry_point = entry_point;
 	threads_arr[size].arg = arg;
 	threads_arr[size].status = READY;
-	/*threads_arr[size].stopped_point = NULL;*/
 	size++;
 }
 
