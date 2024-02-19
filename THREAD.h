@@ -1,5 +1,5 @@
 #ifndef THREAD_H
-#define THERAD_H
+#define THREAD_H
 
 typedef int THREAD__entry_point_t(void *arg);
 

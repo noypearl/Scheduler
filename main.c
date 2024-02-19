@@ -56,12 +56,12 @@ int main(void)
 	SCHEDULER__init();
 
 	/* Add all threads to the scheduler. */
-	for (i = 0; i < _countof(threads); ++i) {
-		SCHEDULER__add_thread(threads[i].entry_point, 
-			                  threads[i].arg);
-	}
+	// for (i = 0; i < _countof(threads); ++i) {
+	// 	SCHEDULER__add_thread(threads[i].entry_point, 
+	// 		                  threads[i].arg);
+	// }
 
-	SCHEDULER__schedule_threads();
+	// SCHEDULER__schedule_threads();
 
 	return 0;
 }
