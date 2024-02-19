@@ -4,7 +4,7 @@
 
 int thread_1(void *arg)
 {
-	printf("Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
+	printf("[T1 START] Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
 	int number3= 3;
 	int number4 = 4;
 	int number5 = 5;
@@ -17,7 +17,7 @@ int thread_1(void *arg)
 	// int number11 = 11;
 	// int number12 = 12;
         // for (int i = 0; i < 10; i++) {
-	printf("Hello from thread 1 again!\r\n");
+	printf("[T1 END] Hello from thread 1 again!\r\n");
 	// printf("number (3) : %d\n", number3);
 	// printf("number (4) : %d\n", number4);
 	// printf("number (5) : %d\n", number5);
@@ -36,13 +36,13 @@ int thread_1(void *arg)
 
 int thread_2(void *arg)
 {
-	printf("Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
+	printf("[T2 START] Hello from thread 2! arg is a pointer to 0x%08x\r\n", arg);
 	// uint64_t curr_sp = 0;
 	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 	// printf("T2: curr_sp : %p\n", curr_sp);
 	// SCHEDULER__yield();
 	// thread_1(NULL);
-	printf("Hello from thread 2 again!\r\n");
+	printf("[T2 END] Hello from thread 2 again!\r\n");
 
 	return 0;
 }
@@ -52,7 +52,7 @@ int thread_3(void *arg)
 	// uint64_t curr_sp = 0;
 	// __asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
 	// printf("T3: curr_sp : %p\n", curr_sp);
-	printf("Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
+	printf("[T3 START] Hello from thread 3! arg is a pointer to 0x%08x\r\n", arg);
 
 	// int Xnumber3= 3;
 	// int Xnumber4 = 4;
@@ -65,7 +65,7 @@ int thread_3(void *arg)
 	// printf("[T3] number (4) : %d\n", Xnumber4);
 	// printf("[T3] number (5) : %d\n", Xnumber5);
 	// printf("[T3] number (6) : %d\n", Xnumber6);
-	printf("Hello from thread 3 again!\r\n");
+	printf("[T3 END] Hello from thread 3 again!\r\n");
 
 	return 0;
 }
