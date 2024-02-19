@@ -141,7 +141,8 @@ void thread_dieded(){
 	}
 		else if(threads_arr[idx].status == STOPPED){ // need to CONTEXT SWITCH!
 			printf("NEED TO CONTEXT SWITCH and continue thread %d\n", idx);
-			printf("PC VAL: %d", threads_arr[idx].ctx.pc);
+			printf("PC VAL: %x", threads_arr[idx].ctx.pc);
+			printf("LOLZZZ");
 			__asm__ volatile ("mov x0, %0" : : "r" (threads_arr[idx].ctx.x0) : "x0"); // copy var to sp
 			__asm__ volatile ("mov x1, %0" : : "r" (threads_arr[idx].ctx.x1) : "x1"); // copy var to sp
 			__asm__ volatile ("mov x2, %0" : : "r" (threads_arr[idx].ctx.x2) : "x2"); // copy var to sp
@@ -188,7 +189,8 @@ void thread_dieded(){
 void SCHEDULER__schedule_threads(void){
     // printf("%s", "in schedule_threads\n");
     int nextThreadToHandleIndex = getNextThreadIndexToHandle();
-	if (nextThreadToHandleIndex != -1){
+	idx = nextThreadToHandleIndex;
+	if (idx != -1){
 			uint64_t curr_sp = 0;
 			uint64_t curr_lr = 0;
 			__asm__ volatile ("mov %0, sp" : "=r"(curr_sp) ::);  // copy sp to var
@@ -199,14 +201,13 @@ void SCHEDULER__schedule_threads(void){
 			// dieded_addr = dieded_addr & 0xfffffff;
 			// new_sp[0] = &thread_dieded;
 			// new_sp[1] = &thread_dieded;
+			threads_arr[idx].ctx.sp = new_sp;
+			threads_arr[idx].ctx.lr = dieded_addr;
+			threads_arr[idx].status = RUNNING;
 			__asm__ volatile ("mov lr, %0" : : "r" (dieded_addr) : "lr"); // copy var to sp
 			// printf("[be4 init] setting new SP:  %p\n", new_sp);
 			__asm__ volatile ("mov sp, %0" : : "r" (new_sp) : "sp"); // copy var to sp
-			threads_arr[nextThreadToHandleIndex].ctx.sp = new_sp;
-			threads_arr[nextThreadToHandleIndex].ctx.lr = dieded_addr;
-			idx = nextThreadToHandleIndex; // setting index of running thread
-			__asm__ volatile ( "BR %0" : : "r" (threads_arr[nextThreadToHandleIndex].entry_point):); // TODO - solve argument that's printed
-			threads_arr[nextThreadToHandleIndex].status = RUNNING;
+			__asm__ volatile ( "BR %0" : : "r" (threads_arr[idx].entry_point):); // TODO - solve argument that's printed
 			// __asm__ volatile ("mov sp, %0" : : "r" (curr_sp) : "sp"); // copy var to sp
 			// __asm__ volatile ("mov lr, %0" : : "r" (curr_lr) : "lr"); // copy var to sp
         }
@@ -315,7 +316,8 @@ void SCHEDULER__yield(void){
 		// Resume thread
 		else if ( threads_arr[idx].status == STOPPED){
 			// TODO - difficult part
-			printf("in yield, now need to handle thread index %d\n", idx);
+			printf("in yield, now need to handle thread index %d. Exiting\n", idx);
+			exit(1);
 			// ACTUALLY YIELD LOGIC - SWITCH CONTEXT WITH NEXT ONE
 		}
 		else{
