@@ -10,9 +10,9 @@ int thread_1(void *arg)
 	int number5 = 5;
 	int number6 = 6;
 	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
-	// printf("[T1] number (3) : %d\n", number3);
+	printf("[T1] number (3) : %d\n", number3);
 	printf("[T1] number (4) : %d\n", number4);
-	// printf("[T1] number (5) : %d\n", number5);
+	printf("[T1] number (5) : %d\n", number5);
 	printf("[T1 END] Hello from thread 1 again!\r\n");
 	return 0;
 }
