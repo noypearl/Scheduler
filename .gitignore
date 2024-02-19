@@ -5,3 +5,4 @@
 *.sln
 *.o
 program
+ndk/

@@ -4,7 +4,6 @@
 // Wrapping thread with statuses
 typedef enum STATUS {
 	STOPPED,
-        READY,
 	WAITING,
 	RUNNING,
 	FINISHED
@@ -35,8 +34,9 @@ void SCHEDULER__init(void){
  * different thread. */
 void SCHEDULER__yield(void){
     int nextThreadIndex = -1;
+    int i = 0;
 // TODO - schedule start scheduler
-	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
+	for (i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
 	{	
             if(threads_arr[i].status == RUNNING){
                 threads_arr[i].status = STOPPED;
@@ -44,15 +44,40 @@ void SCHEDULER__yield(void){
             // mark the index of the next thread we're going to resume/start
             else if((threads_arr[i].status == STOPPED || threads_arr[i].status == WAITING) && nextThreadIndex == -1){
                 nextThreadIndex = i;
+                printf("Frame addr: %x\n", __builtin_frame_address(1));
                 // TODO - should I stop the thread?
-                threads_arr[nextThreadIndex].status = READY;
+                threads_arr[nextThreadIndex].status = READY; // TOOD - maybe redundant to set status and again set it after 4 lines #stupid?
+                break;
         }
 }
+	if(nextThreadIndex == -1){
+		printf("Last thread yielded at index %n - no more threads to start");
+	}
+	else{
+		printf("Starting thread number %n\n", nextThreadIndex);
+		threads_arr[nextThreadIndex].entry_point(threads_arr[nextThreadIndex].arg);
+		threads_arr[nextThreadIndex].status = RUNNING;
+	}
 }
 
+// Loops all thread array and returns the index of the next thread we shuold handle, 
+// return -1 if no threads to handle
+int getNextThreadIndexToHandle(void){
+	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
+	{
+		enum STATUS threadStatus = threads_arr[i].status;
+		if(threadStatus != FINISHED && threadStatus != RUNNING){
+                    printf("Returning from getNextThreadIndexToHandle, i: %n", i);
+			return i;
+		}
+	}
+	return -1;
+}
 /* Start the scheduler. This function will return only when all
  * threads finished their work. */
 void SCHEDULER__schedule_threads(void){
+    int nextThreadToHandleIndex = -1;
+    while((nextThreadToHandleIndex = getNextThreadIndexToHandle()) != -1){ // index of the next thread we should start or resume. Stop while all threads finished.
 	// TODO - schedule start scheduler
 	for (int i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
 	{
@@ -60,6 +85,7 @@ void SCHEDULER__schedule_threads(void){
 		// if thread finished - continue loop 
 		if (threads_arr[i].status == FINISHED)
 		{
+            printf("thread at %d is FINISHED, skipping..\n", i);
 			continue;
 		}
 		else{
@@ -70,14 +96,13 @@ void SCHEDULER__schedule_threads(void){
 			{
 				// RUN thread
 				int ep = threads_arr[i].entry_point(threads_arr[i].arg);
-                                printf("TEST\n");
 				threads_arr[i].status = FINISHED;
-                                // printf("TESTAAA\n");
 			}
 		}
 	}
-}
+    }
 
+}
 
 
 void SCHEDULER__print_thread(int index){
