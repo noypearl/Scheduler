@@ -156,32 +156,30 @@ void mytest(int first, int second, int third, int fourth){
  * ARM: We need to save the context and set LR   */
 void SCHEDULER__yield(void){
 	printf("in YIELD at 1st line!\n");
-	uint64_t returnAddr;
-	uint64_t *sp;
-	uint64_t *fp;
+	uint64_t returnAddr; // 1 line before yield()
+	uint64_t *prev_sp; //previous stack pointer to restore
+	uint64_t *fp; // one of the registers to restore TODO - maybe I should restore it from sp (?)
+	uint64_t *lr; // 1 line after field()
 	// __asm__ volatile ("mov %0, x30" : "=r"(returnAddr) ::); // TODO - set context
-	__asm__ volatile ("mov %0, sp" : "=r"(sp) ::); // TODO - set context
-	__asm__ volatile ("mov %0, fp" : "=r"(fp) ::); // TODO - set context
-	__asm__ volatile ("ldur   %0, [x29, #0x8]" : "=r"(returnAddr) ::); // TODO - set context
-	// __asm__ volatile ("mov %0, sp, #0x34" : "=r"(returnAddr) ::); // TODO - set context
-	// __asm__ volatile ("add %0, sp, #0x30" : "=r"(fp) ::); // TODO - set context
-	// returnAddr = *(sp+0x34)& 0xfffffffff;
-	// returnAddr = *(sp+0x34) & 0xfffffffff;
-	// returnAddr = *(fp+8) & 0xfffffffff;
-	// uint64_t retAddr2 = *(fp -8) & 0xfffffffff;
-	// print_instruction_at_address((void*)returnAddr);
+	// __asm__ volatile ("ldur   %0, [sp, #0x50]" : "=r"(prev_sp) ::); // TODO - set context
+	__asm__ ("add x0, sp, #0x50\n\t" // store $sp+0x50 in prev_sp
+			"mov %0, x0\n\t" : "=r"(prev_sp)::);
+	// __asm__ volatile ("mov   %0, [sp, #0x40]" : "=r"(prev_sp) ::); // TODO - set context
+	__asm__ volatile ("mov %0, fp" : "=r"(fp) ::); 
+	__asm__ volatile ("mov %0, fp" : "=r"(lr) ::);  // addr of 1 line after the call to the thread
+	__asm__ volatile ("ldur   %0, [x29, #0x8]" : "=r"(returnAddr) ::); // addr of 1 line before the call to the thread function
+	uint64_t n = *(prev_sp+8);
 	printf("return addr in Yield(): %p\n", returnAddr);
-	printf("sp in Yield(): %p\n", (sp));
+	printf("sp in Yield(): %p\n", (prev_sp));
+	printf("addr of 1 line after the thread: %p\n", (lr));
+	printf("n: %d\n", n);
 	printf("fp in Yield(): %p\n", (fp));
-	printf("retAddr in fp: %p\n", *(fp+8));
 	printf("calling returnAddr %p\n", returnAddr);
-	void (*foo)(void) = (void (*)())returnAddr;
-	foo();
+	// void (*foo)(void) = (void (*)())returnAddr;
+	// foo();
 	// mytest(3, 7,126,9);
-    printf("in SCHEDULER__yield\n");
     int nextThreadIndex = -1;
     int i = 0;
-    printf("in YIELD!\n");
 
 	// need to preserve state & arguments
 	// context ctx = getNewContext();
