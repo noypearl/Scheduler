@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include "THREAD.h"
 
+
 // Wrapping thread with statuses
 typedef enum STATUS {
 	STOPPED,
@@ -11,19 +12,53 @@ typedef enum STATUS {
 };
 
 int currSize;
+/*
+The ARM64 calling convention specifies that the first eight parameters to a function are passed in registers x0 through x7. 
+Additional parameters are passed on the stack. 
+x9 to x15 - More temporary registers, often used for local variables.
+The return value is passed back in register x0, or in x1 as well if it's 128 bits. 
+The x19 to x30 and sp registers must be preserved across function calls.
+*/
+typedef struct {
+	uint64_t pc; // program counter (r15) -> current instruction executed
+	uint64_t sp; // stack pointer (sp)
+	uint64_t lr; // return addr  (x30)
+	uint64_t cpsr; // status pointer (r14)
+	uint64_t x0; 
+	uint64_t x1; 
+	uint64_t x2; 
+	uint64_t x3; 
+	uint64_t x4; 
+	uint64_t x5; 
+	uint64_t x6; 
+	uint64_t x7; 
+	uint64_t fp; // frame pointer (x29)
+	uint64_t x9;
+	uint64_t x10;
+	uint64_t x11;
+	uint64_t x12;
+	uint64_t x13;
+	uint64_t x14;
+	uint64_t x15;
+
+} context;
+
 struct {
 	THREAD__entry_point_t *entry_point;
-	void *stopped_point;
+	void *pcb_addr;
 	void *arg;
 	enum STATUS status;
+	context ctx;
 } threads_arr[3];
+
+
 
 int size = 0;
 
 int idx = 0;
 
 void SCHEDULER__init(void){
-	printf("%s", "in SCHEDULER__init\n");
+        printf("%s", "in SCHEDULER__init\n");
 	currSize = 0;
 	// threads[0].entry_point = 0;
 	// threads[0].arg = 'a';
@@ -31,43 +66,85 @@ void SCHEDULER__init(void){
 	// TODO - initiallize threads array
 }
 
+// Return new context struct
+context getNewContext(){
+	context newContext;
+	__asm__ volatile ("mov %0, x30" : "=r"(newContext.lr) ::);
+	__asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::);
+	__asm__ volatile ("mov %0, x0" : "=r"(newContext.x0) ::);
+	__asm__ volatile ("mov %0, x1" : "=r"(newContext.x1) ::);
+	__asm__ volatile ("mov %0, x2" : "=r"(newContext.x2) ::);
+	__asm__ volatile ("mov %0, x3" : "=r"(newContext.x3) ::);
+
+    // printf("Program Counter: %p\n", newContext.pc);
+    printf("Stack Pointer: %p\n", newContext.sp);
+    printf("X2: %p\n", newContext.x2);
+    printf("X1: %p\n", newContext.x1);
+    printf("X0: %p\n", newContext.x0);
+    printf("Ret addr: %p\n", newContext.lr);
+	return newContext;
+}
+
+void setContext(context ctx){
+	// does shinenigans with PCB & context block
+	// And also jumps to the address of the ctx & sets esp
+	// __asm__("movl (%%ebp), %0" : "=r"(pc)); // This gets the return address, close to current PC
+    // __asm__("movl %%esp, %0" : "=r"(sp));
+
+    // printf("Program Counter: %p\n", pc);
+    // printf("Stack Pointer: %p\n", sp);
+}
+void mytest(int first, int second, int third, int fourth){
+	context newContext;
+	__asm__ volatile ("mov %0, x30" : "=r"(newContext.lr) ::);
+	__asm__ volatile ("mov %0, sp" : "=r"(newContext.sp) ::);
+	__asm__ volatile ("mov %0, x0" : "=r"(newContext.x0) ::);
+	__asm__ volatile ("mov %0, x1" : "=r"(newContext.x1) ::);
+	__asm__ volatile ("mov %0, x2" : "=r"(newContext.x2) ::);
+	__asm__ volatile ("mov %0, x3" : "=r"(newContext.x3) ::);
+	__asm__ volatile ("mov %0, x9" : "=r"(newContext.x9) ::);
+	__asm__ volatile ("mov %0, x10" : "=r"(newContext.x10) ::);
+	__asm__ volatile ("mov %0, x29" : "=r"(newContext.fp) ::);
+
+    // printf("Program Counter: %p\n", newContext.pc);
+    printf("TEST\n");
+    printf("Stack Pointer: %p\n", newContext.sp);
+    printf("X9: %p\n", newContext.x9);
+    printf("X5: %p\n", newContext.x5);
+    printf("X4: %p\n", newContext.x4);
+    printf("X3: %p\n", newContext.x3);
+    printf("X2: %p\n", newContext.x2);
+    printf("X1: %p\n", newContext.x1);
+    printf("X0: %p\n", newContext.x0);
+    printf("fp: %p\n", newContext.fp);
+    printf("Ret addr: %p\n", newContext.lr);
+
+}
 /* Yield function, to be used by the schedulers threads.
  * Once a thread calls yield, execution should continue from a 
- * different thread. */
+ * different thread. 
+ * ARM: We need to save the context   */
 void SCHEDULER__yield(void){
-    printf("in SCHEDULER__yield");
+	mytest(3, 7,126,9);
+    printf("in SCHEDULER__yield\n");
     int nextThreadIndex = -1;
     int i = 0;
+    printf("in YIELD!\n");
+
+	// context ctx = getNewContext();
+    /*__asm__("movl %edx, %eax\n\t"*/
+        /*"addl $2, %eax\n\t");*/
+    
 // TODO - schedule start scheduler
-	for (i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)
-	{	
-            // TODO - set stopped_point of thread object
-            if(threads_arr[i].status == RUNNING){
-                threads_arr[i].status = STOPPED;
-            }
-            // mark the index of the next thread we're going to resume/start
-            else if((threads_arr[i].status == STOPPED || threads_arr[i].status == WAITING) && nextThreadIndex == -1){
-                nextThreadIndex = i;
-                printf("Frame addr: %x\n", __builtin_frame_address(1));
-                // TODO - should I stop the thread?
-                /*threads_arr[nextThreadIndex].status = READY; // TOOD - maybe redundant to set status and again set it after 4 lines #stupid?*/
-                break;
-        }
-}
-	if(nextThreadIndex == -1){
-		/*printf("Last thread yielded at index %d - no more threads to start");*/
-	}
-	else{
-		printf("Starting thread number %d\n", nextThreadIndex);
-		threads_arr[nextThreadIndex].entry_point(threads_arr[nextThreadIndex].arg);
-                threads_arr[nextThreadIndex].status = RUNNING;
-    }
+	/*for (i = 0; i < sizeof(threads_arr)/sizeof(threads_arr[0]); i++)*/
+	/*{	*/
+
 }
 
 void resumeThread(int index){
     printf("resumeThread\n");
     threads_arr[index].status = RUNNING;
-    *((int *)(threads_arr[index].stopped_point));
+    /**((int *)(threads_arr[index].stopped_point));*/
 
 }
 
@@ -157,7 +234,7 @@ void SCHEDULER__add_thread(THREAD__entry_point_t *entry_point,
 	threads_arr[size].entry_point = entry_point;
 	threads_arr[size].arg = arg;
 	threads_arr[size].status = WAITING;
-	threads_arr[size].stopped_point = NULL;
+	/*threads_arr[size].stopped_point = NULL;*/
 	size++;
 }
 

@@ -1,5 +1,5 @@
-CC=gcc
-CFLAGS=-Wall -g
+CC=clang
+CFLAGS=-Wall -g 
 
 all: program
 

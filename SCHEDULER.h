@@ -23,6 +23,7 @@ void SCHEDULER__print_thread(int index);
 
 // added new
 void SCHEDULER__print_threads(void);
-#endif
-
 void SCHEDULER__test(void);
+
+void mytest(int first, int second, int third, int fourth);
+#endif
