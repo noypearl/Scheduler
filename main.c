@@ -5,13 +5,13 @@
 int thread_1(void *arg)
 {
 	printf("[T1 START] Hello from thread 1 arg is a pointer to 0x%08x!\r\n", arg);
-	int number3= 3;
-	int number4 = 4;
-	int number5 = 5;
+	// int number3= 3;
+	// int number4 = 4;
+	// int number5 = 5;
 	// int number6 = 6;
 	// int number7 = 7;
 	// int number8 = 8;
-	SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
+	// SCHEDULER__yield(); // in yield I need to check the running process, set it to stopped and run the next one
 	// int number9 = 9;
 	// int number10 = 10;
 	// int number11 = 11;
