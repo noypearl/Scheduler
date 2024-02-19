@@ -368,7 +368,7 @@ void SCHEDULER__yield(void)
 	// if(threads_arr[idx].ctx.pc == 0){
 	threads_arr[idx].status = STOPPED;
 	// }
-	newContext.sp = newContext.fp + 2; // preserve sp
+	newContext.sp = newContext.fp -4; // preserve sp
 	printf("NEW CONTEXT: fp: %x sp: %x ", newContext.sp, newContext.fp);
 	threads_arr[idx].ctx = newContext;
 	int threadToStartOrResumeIndex = getNextThreadIndexToHandleIndex(idx);
@@ -394,7 +394,6 @@ void SCHEDULER__yield(void)
 			new_sp = mmap(NULL, 1024, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 			uint64_t dieded_addr = &thread_dieded;
 			*(new_sp) = dieded_addr;	// avoid stack frame stp / ldp fp,lr issue
-			*(new_sp + 1) = 0x33333333; // avoid stack frame stp / ldp fp,lr issue
 			threads_arr[idx].ctx.sp = new_sp;
 			printf("[yield]NEW SP: %d, IDX: %d, VAL: %d\n", new_sp, idx, threads_arr[idx].ctx.sp);
 			threads_arr[idx].ctx.lr = dieded_addr;
